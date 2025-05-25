@@ -12,7 +12,7 @@ if (!fs.existsSync(outputPath)) {
   fs.mkdirSync(outputPath, { recursive: true });
 }
 
-const executeJava = (filePath) => {
+const executeJava = (filePath,inputFilePath) => {
   return new Promise((resolve, reject) => {
     const code = fs.readFileSync(filePath, "utf-8"); // ✅ read Java code from file
 
@@ -23,7 +23,7 @@ const executeJava = (filePath) => {
     const mainFilePath = path.join(jobDir, 'Main.java');
     fs.writeFileSync(mainFilePath, code);
 
-    const command = `javac -d "${jobDir}" "${mainFilePath}" && java -cp "${jobDir}" Main`;
+    const command = `javac -d "${jobDir}" "${mainFilePath}" && java -cp "${jobDir}" Main ${inputFilePath}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {

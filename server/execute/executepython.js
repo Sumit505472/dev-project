@@ -12,9 +12,9 @@ if (!fs.existsSync(outputPath)) {
   fs.mkdirSync(outputPath, { recursive: true });
 }
 
-const executePython = (filePath) => {
+const executePython = (filePath,inputFilePath) => {
   return new Promise((resolve, reject) => {
-    exec(`python "${filePath}"`, (error, stdout, stderr) => {
+    exec(`python "${filePath}" < "${inputFilePath}"`, (error, stdout, stderr) => {
       if (error) {
         return reject({ error, stderr });
       }

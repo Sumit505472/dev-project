@@ -18,13 +18,15 @@ if (!fs.existsSync(outputPath)) {
 }
 
 // 'C:\\Users\\Sumit\\Desktop\\onlinecompiler\\backend\\codes\\5aab0e21-ef55-46a7-bfca-26354d058178.cpp'
-const executeCpp = (filePath) => {
+const executeCpp = (filePath,inputFilePath) => {
     const jobId = path.basename(filePath).split(".")[0];//5aab0e21-ef55-46a7-bfca-26354d058178
     const output_filename = `${jobId}.exe`;//5aab0e21-ef55-46a7-bfca-26354d058178.exe
     const outPath = path.join(outputPath, output_filename);//C:\Users\Sumit\Desktop\onlinecompiler\backend\outputs\5aab0e21-ef55-46a7-bfca-26354d058178.exe
 
     return new Promise((resolve, reject) => {
-        exec(`g++ ${filePath} -o ${outPath} && cd ${outputPath} &&  .\\${output_filename}`, (error, stdout, stderr) => {
+        exec(`g++ "${filePath}" -o "${outPath}" && cd "${outputPath}" && .\\${output_filename} < "${inputFilePath}"`,
+            
+             (error, stdout, stderr) => {
             if (error) {
                 reject({ error, stderr });
             }

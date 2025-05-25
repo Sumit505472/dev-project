@@ -7,14 +7,16 @@ import cors from "cors";
 
 import DBConnection from "./database/db.js";
 import User from "./models/user.js";
-import submission from "./models/submission.js";
+
 
 import generateFile from "./generatefile.js";
-import executeCpp from "./executecpp.js";
-import executeC from "./executec.js";
-import executeJava from "./executejava.js";
-import executePython from "./executepython.js";
-import problem from "./models/problem.js";
+import executeCpp from "./execute/executecpp.js";
+import executeC from "./execute/executec.js";
+import executeJava from "./execute/executejava.js";
+import executePython from "./execute/executepython.js";
+import Problem from "./models/problem.js";  
+import generateInputFile from "./generateInputFile.js";
+import {v4 as uuid} from "uuid";  
 
 const app = express();
 dotenv.config();
@@ -33,7 +35,7 @@ app.get("/", (req, res) => {
   res.send("Online Judge Server is running.");
 });
 
-// =================== AUTH ROUTES 
+
 
 app.post("/register", async (req, res) => {
   try {
@@ -120,35 +122,15 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// =================== SUBMISSION ROUTE ===================
 
-app.post("/submit", async (req, res) => {
-  try {
-    const { language, code, testcase, testOutput } = req.body;
 
-    if (!(language && code && testcase && testOutput)) {
-      return res.status(400).send("Enter all the fields");
-    }
 
-    const newSubmission = await submission.create({
-      code,
-      testcase,
-      testOutput,
-      language,
-      user: req.user?._id || "unknown", // Fallback if no user context
-    });
 
-    res.status(200).json({ message: "Submission saved", submission: newSubmission });
-  } catch (error) {
-    console.error("Submission failed", error);
-    res.status(500).send("Something went wrong");
-  }
-});
 
-// =================== CODE EXECUTION ROUTE ===================
+
 
 app.post("/run", async (req, res) => {
-  const { language = "cpp", code } = req.body;
+  const { language = "cpp", code,input} = req.body;
 
   if (!code) {
     return res.status(400).json({
@@ -159,26 +141,27 @@ app.post("/run", async (req, res) => {
 
   try {
     const filePath = generateFile(language, code);
+    const inputFilePath = generateInputFile( input);  
     let output;
 
     switch (language) {
       case "cpp":
-        output = await executeCpp(filePath);
+        output = await executeCpp(filePath,inputFilePath);
         break;
       case "c":
-        output = await executeC(filePath);
+        output = await executeC(filePath,inputFilePath);
         break;
       case "java":
-        output = await executeJava(filePath);
+        output = await executeJava(filePath,inputFilePath);
         break;
       case "python":
-        output = await executePython(filePath);
+        output = await executePython(filePath,inputFilePath);
         break;
       default:
         return res.status(400).json({ error: "Unsupported language" });
     }
 
-    res.json({ filePath, output });
+    res.json({ filePath, output,input });
   } catch (err) {
     console.error("Error in running code:", err);
     res.status(500).json({
@@ -188,11 +171,11 @@ app.post("/run", async (req, res) => {
   }
 });
 
-//problem route
+//
 
 app.get("/problem",async(req,res)=>{
   try{
-    const problems = await problem.find({});
+    const problems = await Problem.find({});
     res.status(200).json({
       success:true,
       problems
@@ -203,7 +186,35 @@ app.get("/problem",async(req,res)=>{
     error:error.message
   })
 }
-})
+});
+
+//problem route add problen
+
+app.post("/add",async(req,res)=>{
+  const question=req.body;
+
+  try{
+    console.log("Received problem:", req.body);
+    const newProblem = new Problem(question);
+
+
+
+   await newProblem.save();
+
+   res.status(200).json({
+    success:true,
+    message:"Problem added successfully"
+   });
+
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+
+});
+
 // =================== START SERVER ===================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
