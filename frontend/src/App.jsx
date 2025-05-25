@@ -8,8 +8,7 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  const [code, setCode] = useState(`
-// Include the input/output stream library
+  const [code, setCode] = useState(`// Include the input/output stream library
 #include <iostream> 
 
 // Define the main function
@@ -32,7 +31,6 @@ int main() {
 
     try {
       const { data } = await axios.post('http://localhost:5000/run', payload);
-      console.log(data);
       setOutput(data.output);
     } catch (error) {
       console.log(error?.response || error);
@@ -41,66 +39,76 @@ int main() {
   };
 
   return (
-    <div className="container mx-auto py-8 flex flex-col items-center">
-      <h1 className="text-3xl font-bold mb-4">Online Code Compiler</h1>
+    <div className="min-h-screen bg-pink-100 p-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* LEFT SIDE: Editor + Run */}
+        <div>
+          <h1 className="text-3xl font-bold mb-4"> Online Code Compiler</h1>
 
-      <select
-        value={language}
-        onChange={(e) => setLanguage(e.target.value)}
-        className="select-box border border-gray-300 rounded-lg py-1.5 px-4 mb-1 focus:outline-none focus:border-indigo-500"
-      >
-        <option value='cpp'>C++</option>
-        <option value='c'>C</option>
-        <option value='python'>Python</option>
-        <option value='java'>Java</option>
-      </select>
+          <div className="bg-white shadow-md rounded-md p-4 mb-4">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="mb-2 px-2 py-1 border rounded"
+            >
+              <option value='cpp'>C++</option>
+              <option value='c'>C</option>
+              <option value='python'>Python</option>
+              <option value='java'>Java</option>
+            </select>
 
-      <div className="bg-gray-100 shadow-md w-full max-w-lg mb-4" style={{ height: '300px', overflowY: 'auto' }}>
-        <Editor
-          value={code}
-          onValueChange={code => setCode(code)}
-          highlight={code => highlight(code, languages.js)}
-          padding={10}
-          style={{
-            fontFamily: '"Fira code", "Fira Mono", monospace',
-            fontSize: 12,
-            outline: 'none',
-            border: 'none',
-            backgroundColor: '#f7fafc',
-            height: '100%',
-            overflowY: 'auto'
-          }}
-        />
-      </div>
+            <div className="bg-gray-100 border rounded h-96 overflow-y-auto">
+              <Editor
+                value={code}
+                onValueChange={setCode}
+                highlight={code => highlight(code, languages.js)}
+                padding={10}
+                style={{
+                  fontFamily: '"Fira code", "Fira Mono", monospace',
+                  fontSize: 12,
+                  height: '100%',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          </div>
 
-      <textarea
-        placeholder="Enter input for your program (e.g. values for cin)"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        className="border border-gray-300 rounded-lg p-2 mb-4 w-full max-w-lg"
-        rows={4}
-      />
-
-      <button
-        onClick={handleSubmit}
-        type="button"
-        className="text-center inline-flex items-center text-white bg-gradient-to-br from-pink-500 to-orange-400 hover:bg-gradient-to-bl focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 me-2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
-        </svg>
-        Run
-      </button>
-
-      {output && (
-        <div className="outputbox mt-4 bg-gray-100 rounded-md shadow-md p-4">
-          <p style={{
-            fontFamily: '"Fira code", "Fira Mono", monospace',
-            fontSize: 12,
-          }}>{output}</p>
+          <button
+            onClick={handleSubmit}
+            type="button"
+            className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-pink-500 to-orange-400 hover:opacity-90 flex justify-center items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            Run
+          </button>
         </div>
-      )}
+
+        {/* RIGHT SIDE: Input + Output */}
+        <div className="flex flex-col justify-between">
+          {/* Input */}
+          <div>
+            <label className="block text-lg font-medium mb-2">Input</label>
+            <textarea
+              placeholder="Enter input "
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="w-full p-3 h-32 border rounded font-mono resize-none bg-white"
+            ></textarea>
+          </div>
+
+          {/* Output */}
+          <div className="mt-4">
+            <label className="block text-lg font-medium mb-2">Output</label>
+            <div className="w-full bg-gray-100 p-3 h-32 rounded font-mono shadow-inner overflow-y-auto text-sm whitespace-pre-wrap">
+              {output || 'Output will appear here'}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

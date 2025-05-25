@@ -23,7 +23,7 @@ const executeJava = (filePath,inputFilePath) => {
     const mainFilePath = path.join(jobDir, 'Main.java');
     fs.writeFileSync(mainFilePath, code);
 
-    const command = `javac -d "${jobDir}" "${mainFilePath}" && java -cp "${jobDir}" Main ${inputFilePath}`;
+    const command = `javac -d "${jobDir}" "${mainFilePath}" && java -cp "${jobDir}" Main < ${inputFilePath}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
