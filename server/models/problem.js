@@ -50,10 +50,12 @@ const problemSchema=new mongoose.Schema({
     time_limit:{
         type:Number,
         required:true,
+        default:1
     },
     memory_limit:{
         type:Number,
         required:true,
+        default:256
     }
  
 });

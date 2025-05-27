@@ -24,18 +24,16 @@ const executeCpp = (filePath,inputFilePath) => {
     const outPath = path.join(outputPath, output_filename);//C:\Users\Sumit\Desktop\onlinecompiler\backend\outputs\5aab0e21-ef55-46a7-bfca-26354d058178.exe
 
     return new Promise((resolve, reject) => {
-        exec(`g++ "${filePath}" -o "${outPath}" && cd "${outputPath}" && .\\${output_filename} < "${inputFilePath}"`,
+        exec(`g++ "${filePath}" -o "${outPath}" && "${outPath}" < "${inputFilePath}"`
+            ,
             
              (error, stdout, stderr) => {
-            if (error) {
-                reject({ error, stderr });
-            }
-            if (stderr) {
-                reject(stderr);
-            }
-            if (stdout) {
+                if (error) {
+                    return reject({ error: error.message, stderr });
+                }
+                
+                // Allow warnings in stderr but still resolve output
                 resolve(stdout);
-            }
         });
 
        

@@ -17,6 +17,7 @@ import executePython from "./execute/executepython.js";
 import Problem from "./models/problem.js";  
 import generateInputFile from "./generateInputFile.js";
 import {v4 as uuid} from "uuid";  
+import Testcase from "./models/testcase.js";
 
 const app = express();
 dotenv.config();
@@ -173,20 +174,7 @@ app.post("/run", async (req, res) => {
 
 //
 
-app.get("/problem",async(req,res)=>{
-  try{
-    const problems = await Problem.find({});
-    res.status(200).json({
-      success:true,
-      problems
-    })
-  }catch(error){
-  res.status(500).json({
-    success:false,
-    error:error.message
-  })
-}
-});
+
 
 //problem route add problen
 
@@ -214,6 +202,142 @@ app.post("/add",async(req,res)=>{
   }
 
 });
+
+//add testcases in database
+app.post("/testcases", async (req, res) => {
+  const test_cases = req.body; // should be an array
+
+  try {
+    console.log("Received test cases:", test_cases);
+
+    await Testcase.insertMany(test_cases);
+
+    res.status(200).json({
+      success: true,
+      message: "All test cases saved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+//read all problem from database
+app.get("/problem",async(req,res)=>{
+  try{
+    const problems = await Problem.find({});
+    res.status(200).json({
+      success:true,
+      problems
+    })
+  }catch(error){
+  res.status(500).json({
+    success:false,
+    error:error.message
+  })
+}
+});
+
+app.get('/problem/:id', async (req, res) => {
+  try {
+    const problem = await Problem.findById(req.params.id);
+    if (!problem) return res.status(404).json({ error: 'Problem not found' });
+    res.json(problem);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+
+//submission code(user will share its code and problem id and language)
+app.post("/submit", async (req, res) => {
+  const { code, language, problemId } = req.body;
+
+  // 1️⃣ Validate input
+  if (!code || !language || !problemId) {
+    return res.status(400).json({
+      success: false,
+      error: "All fields are required",
+    });
+  }
+
+  try {
+    //  Fetch the problem from the database
+    const problem = await Problem.findById(problemId);
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        error: "Problem not found",
+      });
+    }
+
+    const testCases = await Testcase.find({ problemId: problemId });
+
+
+    let allPassed = true;
+    let results = [];
+
+    const codeFilePath = generateFile(language, code);
+    // 3Loop through each test case and evaluate
+    for (const testCase of testCases) {
+      const inputFilePath = generateInputFile(testCase.input);
+
+      let actualOutput = "";
+
+      //  Execute code based on language
+      switch (language) {
+        case "cpp":
+          actualOutput = await executeCpp(codeFilePath, inputFilePath);
+          break;
+        case "c":
+          actualOutput = await executeC(codeFilePath, inputFilePath);
+          break;
+        case "java":
+          actualOutput = await executeJava(codeFilePath, inputFilePath);
+          break;
+        case "python":
+          actualOutput = await executePython(codeFilePath, inputFilePath);
+          break;
+        default:
+          return res.status(400).json({ error: "Unsupported language" });
+      }
+
+      //  Clean the output and compare with expected
+      const expectedOutput = testCase.output.trim();
+      const cleanedOutput = actualOutput.trim();
+
+      const passed = cleanedOutput === expectedOutput;
+
+      results.push({
+        input: testCase.input,
+        expected: expectedOutput,
+        actual: cleanedOutput,
+        passed,
+      });
+
+      if (!passed) {
+        allPassed = false;
+      }
+    }
+
+    //  Return verdict to frontend
+    return res.status(200).json({
+      success: true,
+      verdict: allPassed ? "Accepted" : "Wrong Answer",
+      results,
+    });
+  } catch (error) {
+    console.error("Submission failed:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+    });
+  }
+});
+
 
 // =================== START SERVER ===================
 const PORT = process.env.PORT || 5000;
