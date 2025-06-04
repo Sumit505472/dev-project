@@ -18,7 +18,7 @@ const problemSchema=new mongoose.Schema({
     type:String,
     required:true,
     },
-    question_description:{
+    description:{
         type:String,
         required:true,
 

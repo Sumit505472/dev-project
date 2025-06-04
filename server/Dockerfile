@@ -2,7 +2,7 @@
 
  WORKDIR /app
 
- RUN apk update && apk add --no-cache  g++
+ RUN apk update && apk add --no-cache g++ openjdk11 python3 gcc
 
  COPY . .
 

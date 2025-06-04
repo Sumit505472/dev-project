@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import cookies from "cookies";
 import cors from "cors";
 
 import DBConnection from "./database/db.js";
@@ -18,6 +19,7 @@ import Problem from "./models/problem.js";
 import generateInputFile from "./generateInputFile.js";
 import {v4 as uuid} from "uuid";  
 import Testcase from "./models/testcase.js";
+import aiCodeReview from "./aicodeReview.js";
 
 const app = express();
 dotenv.config();
@@ -26,7 +28,10 @@ DBConnection();
 const saltRounds = 10;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true               // Allow cookies and credentials
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -64,10 +69,17 @@ app.post("/register", async (req, res) => {
 
     newUser.token = token;
     newUser.password = undefined;
+    
+   res.cookie("token",token,{
+    expires:new Date(Date.now()+1*24*60*60*1000),
+    httpOnly:true,
+   })
 
     res.status(200).json({
       message: "You have successfully registered",
-      user: newUser,
+    
+     
+     
     });
   } catch (error) {
     console.error("Registration failed", error);
@@ -116,12 +128,37 @@ app.post("/login", async (req, res) => {
         message: "You have successfully logged in!",
         success: true,
         token,
+
       });
   } catch (error) {
     console.error("Login failed", error);
     res.status(500).send("Something went wrong");
   }
 });
+
+app.get('/me', async (req, res) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({ message: 'Not logged in' });
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error("Error in /me:", err.message);
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+});
+
+
 
 
 
@@ -253,10 +290,10 @@ app.get('/problem/:id', async (req, res) => {
 
 
 //submission code(user will share its code and problem id and language)
-app.post("/submit", async (req, res) => {
+app.post("/submit",  async (req, res) => {
   const { code, language, problemId } = req.body;
 
-  // 1️⃣ Validate input
+  
   if (!code || !language || !problemId) {
     return res.status(400).json({
       success: false,
@@ -281,7 +318,7 @@ app.post("/submit", async (req, res) => {
     let results = [];
 
     const codeFilePath = generateFile(language, code);
-    // 3Loop through each test case and evaluate
+    // Loop through each test case and evaluate
     for (const testCase of testCases) {
       const inputFilePath = generateInputFile(testCase.input);
 
@@ -337,6 +374,33 @@ app.post("/submit", async (req, res) => {
     });
   }
 });
+//here we will add ai review server side code
+app.post("/ai-review", async (req, res) => {
+  const { code } = req.body;
+
+  if (!code || typeof code !== "string" || code.trim() === "") {
+    return res.status(400).json({
+      success: false,
+      error: "Valid code is required",
+    });
+  }
+
+  try {
+    const review = await  aiCodeReview(code);
+    console.log(review)
+    return res.status(200).json({
+      success: true,
+      review: review,
+    });
+  } catch (error) {
+    console.error("AI review error:", error); // log for debugging
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+});
+
 
 
 // =================== START SERVER ===================
