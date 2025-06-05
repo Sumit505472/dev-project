@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';  // <-- import this
+import { useNavigate } from 'react-router-dom';  
 import axios from 'axios';
+import { useAuth } from '../../Authcontext';
 
 const LoginPage = () => {
+  const { fetchUser } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullname, setFullname] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  
-  const navigate = useNavigate();  // <-- hook to navigate programmatically
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,12 +24,18 @@ const LoginPage = () => {
         const res = await axios.post('http://localhost:5000/login', {
           email,
           password,
+        }, {
+          withCredentials: true,
         });
-        // Save token or user info as needed
-        // e.g., localStorage.setItem('token', res.data.token);
 
-        // Redirect to problem list
-        navigate('/problems');
+        if (res.data.success && res.data.token) {
+          localStorage.setItem("token", res.data.token);  // ✅ Store token
+          await fetchUser();  // ✅ Now this will work correctly
+          navigate('/');
+        } else {
+          setError("Login failed: No token returned");
+        }
+
       } else {
         // Signup validation
         if (password !== confirmPassword) {
@@ -40,14 +48,16 @@ const LoginPage = () => {
           fullname,
           email,
           password,
+        }, {
+          withCredentials: true,
         });
 
-        // After signup, you can either auto-login or redirect to login page
         setIsLogin(true);
         setError("Signup successful! Please login.");
       }
+
     } catch (err) {
-      setError(err.response?.data || 'Something went wrong');
+      setError(err.response?.data?.error || 'Something went wrong');
     }
   };
 
@@ -58,7 +68,7 @@ const LoginPage = () => {
 
         <div className="flex justify-between mb-6 border border-gray-200 rounded-full p-1">
           <button
-            className={`flex-1 py-2 rounded-full transition-all duration-300 text-sm font-medium ${
+            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
               isLogin ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white' : 'text-gray-600'
             }`}
             onClick={() => setIsLogin(true)}
@@ -66,7 +76,7 @@ const LoginPage = () => {
             Login
           </button>
           <button
-            className={`flex-1 py-2 rounded-full transition-all duration-300 text-sm font-medium ${
+            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
               !isLogin ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white' : 'text-gray-600'
             }`}
             onClick={() => setIsLogin(false)}
@@ -88,7 +98,7 @@ const LoginPage = () => {
                 className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
-                required={!isLogin}
+                required
               />
             </div>
           )}
@@ -131,7 +141,7 @@ const LoginPage = () => {
                 className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                required={!isLogin}
+                required
               />
             </div>
           )}
