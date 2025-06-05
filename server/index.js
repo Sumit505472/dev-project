@@ -143,7 +143,7 @@ app.get('/me', async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'Not logged in' });
     }
-
+   
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
     const user = await User.findById(decoded.id).select("-password");
 
