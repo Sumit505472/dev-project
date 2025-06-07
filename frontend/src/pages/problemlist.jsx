@@ -6,9 +6,10 @@ const ProblemList = () => {
   const [problems, setProblems] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/problem')
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/problem`)
       .then(res => res.json())
       .then(data => setProblems(data.problems))
+      
       .catch(err => console.error(err));
   }, []);
 

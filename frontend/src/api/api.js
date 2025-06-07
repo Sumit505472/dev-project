@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: VITE_BACKEND_URL,
 });
 export const registerUser = (userData) => API.post('/register', userData);
 

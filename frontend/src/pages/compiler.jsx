@@ -22,7 +22,7 @@ function Compiler() {
         input,
       };
 
-      const res = await axios.post("http://localhost:5000/run", payload);
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/run`, payload);
 
       if (res.data.error) {
         setOutput(res.data.error);

@@ -21,7 +21,7 @@ const LoginPage = () => {
     try {
       if (isLogin) {
         // Login API call
-        const res = await axios.post('http://localhost:5000/login', {
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, {
           email,
           password,
         }, {
@@ -44,7 +44,7 @@ const LoginPage = () => {
         }
 
         // Signup API call
-        await axios.post('http://localhost:5000/register', {
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/register`, {
           fullname,
           email,
           password,

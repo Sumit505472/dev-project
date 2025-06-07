@@ -11,7 +11,7 @@ const Aireview = ({ code }) => {
     const fetchReview = async () => {
       setIsReviewing(true);
       try {
-        const res = await axios.post("http://localhost:5000/ai-review", { code });
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/ai-review`, { code });
         if (res.data.success && res.data.review) {
             setAiReview(res.data.review);
           } else {

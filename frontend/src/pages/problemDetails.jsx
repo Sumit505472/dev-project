@@ -28,7 +28,8 @@ const ProblemDetail = () => {
   useEffect(() => {
     const fetchProblem = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/problem/${id}`);
+    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/problem/${id}`);
+
         setProblem(res.data.problem || res.data);
       } catch (error) {
         console.error("Error fetching the problem:", error);
@@ -103,7 +104,7 @@ const ProblemDetail = () => {
         input,
       };
 
-      const res = await axios.post("http://localhost:5000/run", payload);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, payload);
       // Assuming response contains { output: string, error: string|null }
       if (res.data.error) {
         setOutput(res.data.error);
@@ -134,7 +135,7 @@ const ProblemDetail = () => {
         problemId: id,
       };
 
-      const res = await axios.post("http://localhost:5000/submit", payload);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/submit`, payload);
       // Assuming response contains { verdict: string, details?: string }
       if (res.data.verdict) {
         setVerdict(res.data.verdict);
