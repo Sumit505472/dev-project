@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';  
 import axios from 'axios';
-import { useAuth } from '../../Authcontext';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const { fetchUser } = useAuth();
@@ -14,13 +14,16 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    localStorage.removeItem("token");
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     try {
       if (isLogin) {
-        // Login API call
         const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, {
           email,
           password,
@@ -28,22 +31,20 @@ const LoginPage = () => {
           withCredentials: true,
         });
 
-        if (res.data.success && res.data.token) {
-          localStorage.setItem("token", res.data.token);  // ✅ Store token
-          await fetchUser();  // ✅ Now this will work correctly
+        if (res.data.success) {
+          localStorage.setItem("token", res.data.token); 
+          await fetchUser();  
           navigate('/');
         } else {
-          setError("Login failed: No token returned");
+          setError("Login failed");
         }
 
       } else {
-        // Signup validation
         if (password !== confirmPassword) {
           setError("Passwords don't match");
           return;
         }
 
-        // Signup API call
         await axios.post(`${import.meta.env.VITE_BACKEND_URL}/register`, {
           fullname,
           email,
@@ -62,22 +63,23 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-[#00c6ff]">
-      <div className="bg-white p-8 rounded-3xl shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-center mb-6">{isLogin ? 'Login' : 'Signup'}</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 px-4">
+      <div className="backdrop-blur-xl bg-white/30 border border-white/20 rounded-3xl shadow-2xl p-8 w-full max-w-md text-white">
+        <h2 className="text-3xl font-bold text-center mb-6 drop-shadow-sm">{isLogin ? 'Login' : 'Signup'}</h2>
 
-        <div className="flex justify-between mb-6 border border-gray-200 rounded-full p-1">
+        {/* Toggle buttons */}
+        <div className="flex justify-between mb-6 bg-white/20 rounded-full p-1">
           <button
-            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              isLogin ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white' : 'text-gray-600'
+            className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${
+              isLogin ? 'bg-white text-blue-600' : 'text-white'
             }`}
             onClick={() => setIsLogin(true)}
           >
             Login
           </button>
           <button
-            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              !isLogin ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white' : 'text-gray-600'
+            className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${
+              !isLogin ? 'bg-white text-blue-600' : 'text-white'
             }`}
             onClick={() => setIsLogin(false)}
           >
@@ -85,17 +87,16 @@ const LoginPage = () => {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 text-red-600 font-semibold">{error}</div>
-        )}
+        {error && <div className="mb-4 text-yellow-200 text-center font-semibold">{error}</div>}
 
+        {/* Form */}
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="mb-4">
               <input
                 type="text"
-                placeholder="Username"
-                className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
+                placeholder="Full Name"
+                className="w-full rounded-md bg-white/70 text-gray-800 py-2 px-3 outline-none focus:ring-2 focus:ring-blue-300 placeholder-gray-500"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
                 required
@@ -107,7 +108,7 @@ const LoginPage = () => {
             <input
               type="email"
               placeholder="Email Address"
-              className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
+              className="w-full rounded-md bg-white/70 text-gray-800 py-2 px-3 outline-none focus:ring-2 focus:ring-blue-300 placeholder-gray-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -118,17 +119,14 @@ const LoginPage = () => {
             <input
               type="password"
               placeholder="Password"
-              className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
+              className="w-full rounded-md bg-white/70 text-gray-800 py-2 px-3 outline-none focus:ring-2 focus:ring-blue-300 placeholder-gray-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
             {isLogin && (
-              <a
-                href="#"
-                className="absolute right-0 bottom-0 text-sm text-blue-600 hover:underline"
-              >
-                Forgot password?
+              <a href="#" className="absolute right-3 top-2 text-sm text-blue-100 hover:underline">
+                Forgot?
               </a>
             )}
           </div>
@@ -138,7 +136,7 @@ const LoginPage = () => {
               <input
                 type="password"
                 placeholder="Confirm Password"
-                className="w-full border-b-2 border-gray-300 outline-none py-2 px-1 focus:border-blue-500"
+                className="w-full rounded-md bg-white/70 text-gray-800 py-2 px-3 outline-none focus:ring-2 focus:ring-blue-300 placeholder-gray-500"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -148,18 +146,18 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-400 text-white py-2 rounded-full font-semibold hover:opacity-90 transition"
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-400 py-2 rounded-full text-white font-semibold hover:opacity-90 transition"
           >
             {isLogin ? 'Login' : 'Signup'}
           </button>
         </form>
 
-        <div className="text-sm text-center mt-4">
+        <div className="text-sm text-center mt-4 text-white">
           {isLogin ? (
             <span>
               Don’t have an account?{' '}
               <button
-                className="text-blue-600 hover:underline"
+                className="text-blue-100 underline hover:text-white"
                 onClick={() => setIsLogin(false)}
               >
                 Signup now
@@ -169,7 +167,7 @@ const LoginPage = () => {
             <span>
               Already have an account?{' '}
               <button
-                className="text-blue-600 hover:underline"
+                className="text-blue-100 underline hover:text-white"
                 onClick={() => setIsLogin(true)}
               >
                 Login
