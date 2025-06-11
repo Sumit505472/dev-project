@@ -36,7 +36,9 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://codedge.online', 
-    'https://www.codedge.online' 
+    'https://www.codedge.online',
+    'https://dev-project-mu.vercel.app' 
+
   ],
 
   credentials: true,
@@ -304,7 +306,7 @@ app.get('/problem/:id', async (req, res) => {
 
 
 
-
+//submission code(user will share its code and problem id and language)
 app.post("/submit", authMiddleware, async (req, res) => {
   const { code, language, problemId } = req.body;
 
