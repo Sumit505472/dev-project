@@ -33,7 +33,12 @@ const saltRounds = 10;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'https://codedge.online', 
+    'https://www.codedge.online' 
+  ],
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -77,10 +82,14 @@ app.post("/register", async (req, res) => {
     newUser.token = token;
     newUser.password = undefined;
     
-   res.cookie("token",token,{
-    expires:new Date(Date.now()+1*24*60*60*1000),
-    httpOnly:true,
-   })
+    res.cookie("token", token, {
+      expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: true,      
+      sameSite: 'None',  
+      domain: '.codedge.online' 
+    });
+    
 
     res.status(200).json({
       message: "You have successfully registered",
@@ -126,17 +135,16 @@ app.post("/login", async (req, res) => {
     const options = {
       expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
       httpOnly: true,
+      secure: true,      
+      sameSite: 'None',  
+      domain: '.codedge.online' 
     };
-
-    res
-      .status(200)
-      .cookie("token", token, options)
-      .json({
-        message: "You have successfully logged in!",
-        success: true,
-        token,
-
-      });
+    res.status(200).cookie("token", token, options).json({
+      message: "You have successfully logged in!",
+      success: true,
+      token, 
+    });
+    
   } catch (error) {
     console.error("Login failed", error);
     res.status(500).send("Something went wrong");
@@ -296,7 +304,7 @@ app.get('/problem/:id', async (req, res) => {
 
 
 
-//submission code(user will share its code and problem id and language)
+
 app.post("/submit", authMiddleware, async (req, res) => {
   const { code, language, problemId } = req.body;
 
