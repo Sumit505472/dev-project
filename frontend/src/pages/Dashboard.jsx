@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useAuth } from "../contexts/AuthContext";
 
 
-import ProfileCard from "../components/ProfileCard";
-import SubmissionTable from "../components/SubmissionTable";
+import ProfileCard from "../components/profileCard";
+import SubmissionTable from "../components/submissionTable";
 
 
 const Dashboard = () => {
