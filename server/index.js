@@ -19,7 +19,11 @@ import Problem from "./models/problem.js";
 import generateInputFile from "./generateInputFile.js";
 import {v4 as uuid} from "uuid";  
 import Testcase from "./models/testcase.js";
+import Submission from "./models/submission.js";
 import aiCodeReview from "./aicodeReview.js";
+import authMiddleware from "./middleware/authmiddleware.js"
+ import subRoutes from "./routes/submissionroutes.js"
+
 
 const app = express();
 dotenv.config();
@@ -29,13 +33,16 @@ const saltRounds = 10;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', 
-  credentials: true               // Allow cookies and credentials
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
+app.use(subRoutes);
 // Home route
 app.get("/", (req, res) => {
   res.send("Online Judge Server is running.");
@@ -235,7 +242,7 @@ app.post("/add",async(req,res)=>{
     res.status(500).json({
       success:false,
       error:error.message
-    })
+    })   
   }
 
 });
@@ -274,7 +281,7 @@ app.get("/problem",async(req,res)=>{
     success:false,
     error:error.message
   })
-}
+}            
 });
 
 app.get('/problem/:id', async (req, res) => {
@@ -290,10 +297,9 @@ app.get('/problem/:id', async (req, res) => {
 
 
 //submission code(user will share its code and problem id and language)
-app.post("/submit",  async (req, res) => {
+app.post("/submit", authMiddleware, async (req, res) => {
   const { code, language, problemId } = req.body;
 
-  
   if (!code || !language || !problemId) {
     return res.status(400).json({
       success: false,
@@ -302,7 +308,6 @@ app.post("/submit",  async (req, res) => {
   }
 
   try {
-    //  Fetch the problem from the database
     const problem = await Problem.findById(problemId);
     if (!problem) {
       return res.status(404).json({
@@ -311,69 +316,76 @@ app.post("/submit",  async (req, res) => {
       });
     }
 
-    const testCases = await Testcase.find({ problemId: problemId });
-
+    const testCases = await Testcase.find({ problemId });
 
     let allPassed = true;
     let results = [];
 
     const codeFilePath = generateFile(language, code);
-    // Loop through each test case and evaluate
+
     for (const testCase of testCases) {
       const inputFilePath = generateInputFile(testCase.input);
-
       let actualOutput = "";
 
-      //  Execute code based on language
-      switch (language) {
-        case "cpp":
-          actualOutput = await executeCpp(codeFilePath, inputFilePath);
-          break;
-        case "c":
-          actualOutput = await executeC(codeFilePath, inputFilePath);
-          break;
-        case "java":
-          actualOutput = await executeJava(codeFilePath, inputFilePath);
-          break;
-        case "python":
-          actualOutput = await executePython(codeFilePath, inputFilePath);
-          break;
-        default:
-          return res.status(400).json({ error: "Unsupported language" });
+      try {
+        switch (language) {
+          case "cpp":
+            actualOutput = await executeCpp(codeFilePath, inputFilePath);
+            break;
+          case "c":
+            actualOutput = await executeC(codeFilePath, inputFilePath);
+            break;
+          case "java":
+            actualOutput = await executeJava(codeFilePath, inputFilePath);
+            break;
+          case "python":
+            actualOutput = await executePython(codeFilePath, inputFilePath);
+            break;
+          default:
+            return res.status(400).json({ error: "Unsupported language" });
+        }
+      } catch (execErr) {
+        return res.status(500).json({ error: "Code execution failed", details: execErr.message });
       }
 
-      //  Clean the output and compare with expected
-      const expectedOutput = testCase.output.trim();
-      const cleanedOutput = actualOutput.trim();
-
-      const passed = cleanedOutput === expectedOutput;
-
+      const passed = actualOutput.trim() === testCase.output.trim();
       results.push({
         input: testCase.input,
-        expected: expectedOutput,
-        actual: cleanedOutput,
+        expected: testCase.output.trim(),
+        actual: actualOutput.trim(),
         passed,
       });
 
-      if (!passed) {
-        allPassed = false;
-      }
+      if (!passed) allPassed = false;
     }
 
-    //  Return verdict to frontend
-    return res.status(200).json({
-      success: true,
+    const newSubmission = new Submission({
+      user: req.user._id,
+      problem: problemId,
+      code,
+      language,
       verdict: allPassed ? "Accepted" : "Wrong Answer",
       results,
     });
-  } catch (error) {
-    console.error("Submission failed:", error);
+
+    await newSubmission.save();
+   
+
+    return res.status(200).json({
+      success: true,
+      verdict: newSubmission.verdict,
+      results: newSubmission.results,
+    });
+
+  } catch (err) {
+    console.error("Submission failed:", err);
     return res.status(500).json({
       success: false,
-      error: "Internal Server Error",
+      error: "Internal server error",
     });
   }
 });
+
 //here we will add ai review server side code
 app.post("/ai-review", async (req, res) => {
   const { code } = req.body;
