@@ -1,42 +1,78 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { exec } from "child_process";
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises'; // Use fs/promises for async file operations
 
+// Get __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const outputPath = path.join(__dirname, "outputs");
+// Define directories for code (relative to this file)
+const dirCodes = path.join(__dirname, '..', 'codes');
+// Note: dirOutputs is not directly defined here, as Java compilation creates output in its own jobDir.
 
-if (!fs.existsSync(outputPath)) {
-  fs.mkdirSync(outputPath, { recursive: true });
-}
+// Function to ensure a directory exists (reusable helper)
+const ensureDirExists = async (dir) => {
+    try {
+        await fs.access(dir); // Check if directory exists
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(dir, { recursive: true }); // Create if it doesn't exist
+            console.log(`Created directory: ${dir}`);
+        } else {
+            throw error; // Re-throw other errors
+        }
+    }
+};
 
-const executeJava = (filePath,inputFilePath) => {
-  return new Promise((resolve, reject) => {
-    const code = fs.readFileSync(filePath, "utf-8"); // ✅ read Java code from file
+const executeJava = async (filePath, inputFilePath) => {
+    const jobId = path.basename(filePath).split('.')[0];
+    const className = jobId; // Java main class name must match file name
+    const jobDir = path.dirname(filePath); // The unique directory created for this Java job
 
-    const jobId = `job-${Date.now()}`;
-    const jobDir = path.join(outputPath, jobId);
-    fs.mkdirSync(jobDir, { recursive: true });
+    // Ensure job directory exists for compilation output (e.g., .class files)
+    await ensureDirExists(jobDir); // Ensure the temporary directory for Java exists
 
-    const mainFilePath = path.join(jobDir, 'Main.java');
-    fs.writeFileSync(mainFilePath, code);
+    return new Promise((resolve, reject) => {
+        // Compile Java code
+        // Output of compilation (like .class files) goes into jobDir
+        exec(
+            `javac ${filePath} -d ${jobDir}`,
+            async (compileError, stdoutCompile, stderrCompile) => {
+                // IMPORTANT: Do NOT unlink filePath here as it's the source code used for compilation.
+                // The cleanup of the whole jobDir (including source) is done after execution or on error.
 
-    const command = `javac -d "${jobDir}" "${mainFilePath}" && java -cp "${jobDir}" Main < ${inputFilePath}`;
+                if (compileError) {
+                    console.error('Java Compilation Error:', stderrCompile || stdoutCompile || compileError.message);
+                    // Clean up the job directory on compilation error
+                    await fs.rm(jobDir, { recursive: true, force: true }).catch(err => console.error("Failed to clean up jobDir after compile error:", err));
+                    return reject({ error: "Compilation Error", details: stderrCompile || stdoutCompile || compileError.message });
+                }
 
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error("Execution Error:", error.message);
-        return reject({ success: false, error: error.message });
-      }
-      if (stderr) {
-        console.error("Stderr:", stderr);
-        return reject({ success: false, error: stderr });
-      }
-      return resolve(stdout);
+                // Execute compiled Java code
+                exec(
+                    `java -cp ${jobDir} ${className} < ${inputFilePath}`,
+                    async (runError, stdoutRun, stderrRun) => {
+                        // Clean up the temporary job directory for Java after execution (success or failure)
+                        await fs.rm(jobDir, { recursive: true, force: true })
+                            .then(() => console.log(`Cleaned up Java job dir: ${jobDir}`))
+                            .catch(err => console.error(`Failed to clean up Java job dir ${jobDir}:`, err));
+
+                        if (runError) {
+                            console.error('Java Runtime Error:', stderrRun || stdoutRun || runError.message);
+                            return reject({ error: "Runtime Error", details: stderrRun || stdoutRun || runError.message });
+                        }
+                        if (stderrRun) {
+                            console.warn('Java Stderr during execution:', stderrRun);
+                            // For judge, usually, anything in stderr is an error.
+                            return reject({ error: "Runtime Error", details: stderrRun });
+                        }
+                        resolve(stdoutRun);
+                    }
+                );
+            }
+        );
     });
-  });
 };
 
 export default executeJava;

@@ -1,42 +1,80 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { exec } from "child_process";
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises'; // Use fs/promises for async file operations
 
-
+// Get __dirname for ES Modules for this file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const outputPath = path.join(__dirname, "outputs");
+// Define directories relative to this file for source code, but outputs are passed in
+const dirCodes = path.join(__dirname, '..', 'codes');
+// Note: dirOutputs is no longer directly defined here, it's passed in.
 
-if (!fs.existsSync(outputPath)) {
-  fs.mkdirSync(outputPath, { recursive: true });
-}
+// Function to ensure a directory exists (reusable helper)
+const ensureDirExists = async (dir) => {
+    try {
+        await fs.access(dir); // Check if directory exists
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(dir, { recursive: true }); // Create if it doesn't exist
+            console.log(`Created directory: ${dir}`);
+        } else {
+            throw error; // Re-throw other errors
+        }
+    }
+};
 
-const executeC = (filePath, inputFilePath) => {
-  const jobId = path.basename(filePath).split(".")[0];
-  const output_filename = `${jobId}`;
-  const outPath = path.join(outputPath, output_filename);
+// Modified function to accept outputPath
+const executeC = async (filePath, inputPath, outputPath) => { // ADDED: outputPath parameter
+    const jobId = path.basename(filePath).split('.')[0];
+    const outPath = path.join(outputPath, `${jobId}.out`); // Use the passed outputPath
 
-  return new Promise((resolve, reject) => {
-    const command = `gcc "${filePath}" -o "${outPath}" && "${outPath}" < "${inputFilePath}"`;
+    // Ensure outputs directory exists before compilation
+    await ensureDirExists(outputPath); // Ensure the passed outputPath exists
 
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Execution Error for C/C++: Command failed: ${command}`);
-        console.error({ error_message: error.message, stdout_data: stdout, stderr_data: stderr });
-        return reject({ error: error.message, stdout: stdout, stderr: stderr });
-      }
-      if (stderr) {
-        console.warn(`Stderr for C/C++ execution (might be warnings or runtime error): ${stderr}`);
-        return reject({ error: "Runtime Error/Warning in C/C++", stdout: stdout, stderr: stderr });
-      }
-      if (stdout) {
-        return resolve(stdout);
-      }
-      return resolve("");
+    return new Promise((resolve, reject) => {
+        // Compile the C code
+        exec(
+            `gcc ${filePath} -o ${outPath}`,
+            async (compileError, stdoutCompile, stderrCompile) => {
+                // Clean up source file after compilation attempt
+                await fs.unlink(filePath)
+                    .then(() => console.log(`Successfully deleted: ${filePath}`))
+                    .catch(err => console.error(`Failed to delete file ${filePath}:`, err));
+
+                if (compileError) {
+                    console.error('C Compilation Error:', stderrCompile || stdoutCompile || compileError.message);
+                    return reject({ error: "Compilation Error", details: stderrCompile || stdoutCompile || compileError.message });
+                }
+
+                // Execute the compiled C code
+                exec(
+                    `${outPath} < ${inputPath}`,
+                    async (runError, stdoutRun, stderrRun) => {
+                        // Clean up input and output files after execution attempt
+                        await fs.unlink(inputPath)
+                            .then(() => console.log(`Successfully deleted: ${inputPath}`))
+                            .catch(err => console.error(`Failed to delete file ${inputPath}:`, err));
+                        await fs.unlink(outPath)
+                            .then(() => console.log(`Successfully deleted: ${outPath}`))
+                            .catch(err => console.error(`Failed to delete file ${outPath}:`, err));
+
+                        if (runError) {
+                            console.error('C Runtime Error:', stderrRun || stdoutRun || runError.message);
+                            return reject({ error: "Runtime Error", details: stderrRun || stdoutRun || runError.message });
+                        }
+                        if (stderrRun) {
+                            console.warn('C Stderr during execution:', stderrRun);
+                            // For judge, usually, anything in stderr is an error.
+                            return reject({ error: "Runtime Error", details: stderrRun });
+                        }
+                        resolve(stdoutRun);
+                    }
+                );
+            }
+        );
     });
-  });
 };
 
 export default executeC;

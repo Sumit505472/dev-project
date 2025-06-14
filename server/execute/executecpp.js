@@ -1,49 +1,80 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { exec } from "child_process";
-import {v4 as uuid} from "uuid";
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises'; // Use fs/promises for async file operations
 
-
+// Get __dirname for ES Modules for this file
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);//__dirname gives the path of the current directory
+const __dirname = path.dirname(__filename);
 
-const outputPath = path.join(__dirname, "outputs");
-//C:\Users\Sumit\Desktop\onlinecompiler\backend\outputs
+// Define directories relative to this file for source code, but outputs are passed in
+const dirCodes = path.join(__dirname, '..', 'codes');
+// Note: dirOutputs is no longer directly defined here, it's passed in.
 
-//here a folder created with name outputs in which.exe file will get stored
+// Function to ensure a directory exists (reusable helper)
+const ensureDirExists = async (dir) => {
+    try {
+        await fs.access(dir); // Check if directory exists
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(dir, { recursive: true }); // Create if it doesn't exist
+            console.log(`Created directory: ${dir}`);
+        } else {
+            throw error; // Re-throw other errors
+        }
+    }
+};
 
-if (!fs.existsSync(outputPath)) {
-    fs.mkdirSync(outputPath, { recursive: true });//recursive :true mean if parent folder(onlinecompiler,backend,or output )is not created then node.js will also create it f2fd182e621b2b1f4f400c744a6f260c179a16c3
-}
+// Modified function to accept outputPath
+const executeCpp = async (filePath, inputPath, outputPath) => { // ADDED: outputPath parameter
+    const jobId = path.basename(filePath).split('.')[0];
+    const outPath = path.join(outputPath, `${jobId}.out`); // Use the passed outputPath
 
-// 'C:\\Users\\Sumit\\Desktop\\onlinecompiler\\backend\\codes\\5aab0e21-ef55-46a7-bfca-26354d058178.cpp'
-const executeCpp = (filePath,inputFilePath) => {
-    const jobId = path.basename(filePath).split(".")[0];//5aab0e21-ef55-46a7-bfca-26354d058178
-    const output_filename = `${jobId}.exe`;//5aab0e21-ef55-46a7-bfca-26354d058178.exe
-    const outPath = path.join(outputPath, output_filename);//C:\Users\Sumit\Desktop\onlinecompiler\backend\outputs\5aab0e21-ef55-46a7-bfca-26354d058178.exe
+    // Ensure outputs directory exists before compilation
+    await ensureDirExists(outputPath); // Ensure the passed outputPath exists
 
     return new Promise((resolve, reject) => {
-        exec(`g++ "${filePath}" -o "${outPath}"  && "${outPath}" < "${inputFilePath}"`
-            ,
-            
-             (error, stdout, stderr) => {
-                if (error) {
-                    return reject({ error: error.message, stderr });
-                }
-                
-                // Allow warnings in stderr but still resolve output
-                resolve(stdout);
-        });
+        // Compile the C++ code
+        exec(
+            `g++ ${filePath} -o ${outPath}`,
+            async (compileError, stdoutCompile, stderrCompile) => {
+                // Clean up source file after compilation attempt
+                await fs.unlink(filePath)
+                    .then(() => console.log(`Successfully deleted: ${filePath}`))
+                    .catch(err => console.error(`Failed to delete file ${filePath}:`, err));
 
-       
+                if (compileError) {
+                    console.error('C++ Compilation Error:', stderrCompile || stdoutCompile || compileError.message);
+                    return reject({ error: "Compilation Error", details: stderrCompile || stdoutCompile || compileError.message });
+                }
+
+                // Execute the compiled C++ code
+                exec(
+                    `${outPath} < ${inputPath}`,
+                    async (runError, stdoutRun, stderrRun) => {
+                        // Clean up input and output files after execution attempt
+                        await fs.unlink(inputPath)
+                            .then(() => console.log(`Successfully deleted: ${inputPath}`))
+                            .catch(err => console.error(`Failed to delete file ${inputPath}:`, err));
+                        await fs.unlink(outPath)
+                            .then(() => console.log(`Successfully deleted: ${outPath}`))
+                            .catch(err => console.error(`Failed to delete file ${outPath}:`, err));
+
+                        if (runError) {
+                            console.error('C++ Runtime Error:', stderrRun || stdoutRun || runError.message);
+                            return reject({ error: "Runtime Error", details: stderrRun || stdoutRun || runError.message });
+                        }
+                        if (stderrRun) {
+                            console.warn('C++ Stderr during execution:', stderrRun);
+                            // For judge, usually, anything in stderr is an error.
+                            return reject({ error: "Runtime Error", details: stderrRun });
+                        }
+                        resolve(stdoutRun);
+                    }
+                );
+            }
+        );
     });
-}
+};
 
 export default executeCpp;
-//functionality
-//code.cpp->(after compiling)->code.exe(windows)->output
-
-
-
-
