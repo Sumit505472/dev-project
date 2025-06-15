@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); // Ensure this is at the very top
+dotenv.config(); 
 
 import express from "express";
 import bcrypt from "bcryptjs";
@@ -15,7 +15,6 @@ import fs from "fs/promises"; // Import fs with promises for async operations
 import DBConnection from "./database/db.js";
 import User from "./models/user.js";
 
-// Ensure these imports correctly point to your helper files
 import generateFile from "./generatefile.js";
 import executeCpp from "./execute/executecpp.js";
 import executeC from "./execute/executec.js";
@@ -229,7 +228,7 @@ app.post("/run", async (req, res) => {
         res.json({ output });
 
     } catch (err) {
-        // Enhanced error handling for user feedback
+        
         console.error("Error in running code:", err); // Log the full error object for debugging
 
         let errorMessage = "An unknown error occurred during execution.";

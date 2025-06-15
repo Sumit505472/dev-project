@@ -9,9 +9,10 @@ const ProblemDetail = () => {
     const [problem, setProblem] = useState(null);
     const [code, setCode] = useState("// Write your solution here");
     const [language, setLanguage] = useState("cpp");
-    const [verdict, setVerdict] = useState("");
+    const [verdict, setVerdict] = useState(""); // For general verdict display
     const [input, setInput] = useState("");
-    const [output, setOutput] = useState("");
+    const [output, setOutput] = useState(""); // For run output
+    const [submissionDetails, setSubmissionDetails] = useState(null); // NEW: To store full submission results
     const [fullscreen, setFullscreen] = useState(false);
     const [showInput, setShowInput] = useState(true);
 
@@ -76,7 +77,7 @@ const ProblemDetail = () => {
     const monacoLanguageMap = {
         cpp: "cpp",
         python: "python",
-      
+        java: "java", // Ensure Java is mapped if your backend supports it
         c: "c",
     };
 
@@ -84,16 +85,17 @@ const ProblemDetail = () => {
 
     const handleRun = async () => {
         setIsRunning(true);
-        setVerdict("");
-        setOutput("");
+        setVerdict(""); // Clear verdict
+        setOutput(""); // Clear previous output
+        setSubmissionDetails(null); // Clear previous submission results
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, { code, language, input });
             if (data.error) {
                 setOutput(data.error);
-                setVerdict("Runtime Error");
+                setVerdict("Execution Error"); // Changed from "Runtime Error" for clarity
             } else {
                 setOutput(data.output);
-                setVerdict("Output");
+                setVerdict("Output Display"); // Indicate it's just output
             }
         } catch (error) {
             setOutput("Error running code. Please try again.");
@@ -106,20 +108,30 @@ const ProblemDetail = () => {
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
-        setVerdict("");
-        setOutput("");
+        setVerdict(""); // Clear verdict
+        setOutput(""); // Clear previous output (as detailed results will be shown)
+        setSubmissionDetails(null); // Clear previous submission details
+
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/submit`, { code, language, problemId: id }, { withCredentials: true });
-            if (data.verdict) {
+            
+            // Assuming data contains { success, verdict, results }
+            if (data.success) {
                 setVerdict(data.verdict);
-                setOutput(data.details || "");
+                setSubmissionDetails(data); // Store the entire data object
             } else {
-                setVerdict("Unknown Result");
-                setOutput("");
+                // Handle cases where success is false but not a caught error
+                setVerdict("Submission Failed");
+                setOutput(data.error || "Unknown error occurred during submission.");
             }
         } catch (error) {
             setVerdict("Submission Error");
-            setOutput("Error submitting code. Please try again.");
+            // Check if error.response exists and has data for more specific backend errors
+            if (error.response && error.response.data && error.response.data.error) {
+                setOutput(`Error: ${error.response.data.error}`);
+            } else {
+                setOutput("Error submitting code. Please try again.");
+            }
             console.error(error);
         } finally {
             setIsSubmitting(false);
@@ -167,14 +179,19 @@ const ProblemDetail = () => {
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-2">Sample Cases</h3>
                             <div className="space-y-4">
-                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-gray-600 mb-2">Sample Input</h4>
-                                    <pre className="text-sm text-gray-800 bg-white p-2 rounded">{problem.test_cases[0].input}</pre>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-gray-600 mb-2">Sample Output</h4>
-                                    <pre className="text-sm text-gray-800 bg-white p-2 rounded">{problem.test_cases[0].output}</pre>
-                                </div>
+                                {/* Ensure test_cases[0] exists before trying to access it */}
+                                {problem.test_cases && problem.test_cases.length > 0 && (
+                                    <>
+                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            <h4 className="text-sm font-semibold text-gray-600 mb-2">Sample Input</h4>
+                                            <pre className="text-sm text-gray-800 bg-white p-2 rounded">{problem.test_cases[0].input}</pre>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            <h4 className="text-sm font-semibold text-gray-600 mb-2">Sample Output</h4>
+                                            <pre className="text-sm text-gray-800 bg-white p-2 rounded">{problem.test_cases[0].output}</pre>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -197,7 +214,7 @@ const ProblemDetail = () => {
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-2">Tags</h3>
                             <div className="flex flex-wrap gap-2">
-                                {problem.tags.map(tag => (
+                                {problem.tags && problem.tags.map(tag => (
                                     <span key={tag} className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
                                         {tag}
                                     </span>
@@ -211,7 +228,7 @@ const ProblemDetail = () => {
             {/* Vertical divider */}
             {!fullscreen && <div onMouseDown={handleVerticalMouseDown} className="w-1.5 cursor-col-resize bg-gray-200 hover:bg-blue-300 transition-colors" />}
 
-            {/* --- Right Panel (No changes here) --- */}
+            {/* --- Right Panel --- */}
             <div className="flex flex-col bg-white" style={{ width: fullscreen ? "100%" : `${100 - leftWidth}%` }}>
                 <div className="flex justify-between items-center bg-gray-100 px-4 py-2 border-b select-none">
                     <div className="flex items-center space-x-2">
@@ -219,7 +236,7 @@ const ProblemDetail = () => {
                         <select id="language-select" value={language} onChange={(e) => setLanguage(e.target.value)} className="p-1 border rounded text-sm">
                             <option value="cpp">C++</option>
                             <option value="python">Python</option>
-                            
+                            <option value="java">Java</option> {/* Ensure this is here if backend supports */}
                             <option value="c">C</option>
                         </select>
                     </div>
@@ -234,22 +251,70 @@ const ProblemDetail = () => {
 
                 {!fullscreen && showInput && <div onMouseDown={handleHorizontalMouseDown} className="h-1.5 cursor-row-resize bg-gray-200 hover:bg-blue-300 transition-colors" />}
                 
+                {/* Conditional Rendering of AI Review, Input/Output, or Submission Results */}
                 {showAireview ? (
                     <div className="border-t border-gray-300 p-4 bg-gray-50 flex-grow overflow-auto">
                         <Aireview code={code} />
                     </div>
                 ) : (
-                    !fullscreen && showInput && (
+                    // Show Input/Output for /run OR Submission Details for /submit
+                    !fullscreen && (
                         <div className="bg-gray-50 p-4 space-y-4 flex-grow overflow-auto">
-                            <textarea rows={4} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter custom input here" className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" />
-                            {output && <div className="bg-white p-3 border rounded text-sm font-mono whitespace-pre-wrap overflow-auto">{output}</div>}
+                            {/* Display simple output from /run */}
+                            {!submissionDetails && showInput && (
+                                <>
+                                    <textarea rows={4} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter custom input here" className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" />
+                                    {output && <div className="bg-white p-3 border rounded text-sm font-mono whitespace-pre-wrap overflow-auto">{output}</div>}
+                                </>
+                            )}
+
+                            {/* Display detailed submission results from /submit */}
+                            {submissionDetails && submissionDetails.results && submissionDetails.results.length > 0 && (
+                                <div className="mt-4 bg-white shadow-md rounded-lg overflow-hidden">
+                                    <h3 className="text-xl font-semibold text-gray-800 p-4 border-b">Detailed Test Results</h3>
+                                    <div className="overflow-x-auto"> {/* Added for horizontal scrolling on small screens */}
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Input</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error/Stderr</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {submissionDetails.results.map((res, index) => (
+                                                    <tr key={index} className={res.passed ? 'bg-green-50' : 'bg-red-50'}>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                            {index + 1}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${res.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                                {res.passed ? 'Passed' : 'Failed'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.input}</td>
+                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.expected}</td>
+                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.actual}</td>
+                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-red-700 font-mono max-w-xs overflow-x-auto">
+                                                            {res.error || res.stderr || ''}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )
                 )}
 
                 <div className="flex justify-between items-center space-x-4 p-3 border-t bg-white">
                     <div className="font-semibold text-sm">
-                        Verdict: <span className={verdict === "Accepted" ? "text-green-600" : verdict && verdict !== "Output" ? "text-red-600" : "text-gray-500"}>{verdict || "Not Run"}</span>
+                        Verdict: <span className={verdict === "Accepted" ? "text-green-600" : (verdict && verdict !== "Output Display" ? "text-red-600" : "text-gray-500")}>{verdict || "Not Run"}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <button onClick={() => setShowInput(!showInput)} className="text-sm px-3 py-1.5 bg-gray-200 rounded hover:bg-gray-300" title={showInput ? "Hide Input" : "Show Input"}>{showInput ? "⌄" : "⌃"}</button>

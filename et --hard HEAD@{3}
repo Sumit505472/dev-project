@@ -1,0 +1,39 @@
+[33m7d6b0eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: rebase (abort): returning to refs/heads/main
+[33m7d6b0eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: rebase (abort): returning to refs/heads/main
+[33m2b5ed98[m HEAD@{2}: reset: moving to HEAD~3
+[33m348a9c7[m HEAD@{3}: commit: updated executejava code error
+[33mdf89372[m HEAD@{4}: commit: update 18-alpine to 24-alpine
+[33m5800fc3[m HEAD@{5}: commit: updated code in index.js
+[33m2b5ed98[m HEAD@{6}: reset: moving to HEAD~5
+[33m4bddf3e[m HEAD@{7}: commit: updated some bugs in index.js
+[33mc0e39c5[m HEAD@{8}: commit: changed the slight error in index.js
+[33mf9b18e3[m HEAD@{9}: commit: resole java execution TypeError
+[33m6951dfb[m HEAD@{10}: commit: update index.js
+[33m9492f56[m HEAD@{11}: commit: Improve backend judge execution and error handling
+[33m2b5ed98[m HEAD@{12}: commit: updated problem list page
+[33m085c42c[m HEAD@{13}: commit: corrected error in compiler page
+[33m61c0a93[m HEAD@{14}: commit: corrected the issue in python and c executable file
+[33m482d2ac[m HEAD@{15}: commit: updated cors origin
+[33mbfd871e[m HEAD@{16}: commit: Add vercel.json for SPA routing fallback
+[33mc840e69[m HEAD@{17}: commit: Fix: Enabled secure and SameSite=None for cross-origin cookies
+[33m7e8274c[m HEAD@{18}: commit: added submission schema
+[33m2916ef4[m HEAD@{19}: commit: updated some error in file import
+[33m94f57f6[m HEAD@{20}: commit: added user dashboard and enhanced ui
+[33md12c832[m HEAD@{21}: commit: added vite_backend_url
+[33m7d6b0eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{22}: reset: moving to 7d6b0eb
+[33mdfae7a4[m HEAD@{23}: reset: moving to HEAD~4
+[33m7d6b0eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{24}: commit: added code input file in gitignore
+[33mea57751[m HEAD@{25}: commit: updated homepage,added aireview frontend code
+[33m9793daf[m HEAD@{26}: commit: removed node_modules also
+[33mbd9d527[m HEAD@{27}: commit: removed .env from git
+[33mdfae7a4[m HEAD@{28}: commit: added docker and aireview code
+[33m1f16db4[m HEAD@{29}: commit: created code editor and integrated with backend
+[33m724a9b2[m HEAD@{30}: commit: completed the submittion part
+[33m6998ded[m HEAD@{31}: commit: added placeholder for input and update ui
+[33ma0ae623[m HEAD@{32}: commit: Implemented POST /add endpoint to add new problems to the database
+[33mc768785[m HEAD@{33}: rebase (finish): returning to refs/heads/main
+[33mc768785[m HEAD@{34}: rebase (continue): Add problem model, submission schema, seed script, and code execution handlers; setup Vite-based frontend
+[33m1143173[m HEAD@{35}: pull --rebase origin main (start): checkout 11431732010a597c173a259b7aaf61f45e923657
+[33m6a66842[m HEAD@{36}: commit: Add problem model, submission schema, seed script, and code execution handlers; setup Vite-based frontend
+[33mf75df1a[m HEAD@{37}: commit: added authentication part
+[33m7cf0bd6[m HEAD@{38}: clone: from https://github.com/Sumit505472/dev-project.git
