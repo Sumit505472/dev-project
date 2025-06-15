@@ -10,12 +10,15 @@ const HomePage = () => {
   const isLoggedIn = user && Object.keys(user).length > 0;
 
   return (
+    // Main container div:
+    // Original light mode gradient and text color are the DEFAULT (light mode) styles.
+    // dark:bg-base-100 and dark:text-base-content apply in dark mode.
+    // Crucially: dark:bg-none is added to explicitly remove the gradient in dark mode.
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 text-gray-900
-                dark:bg-base-100 dark:text-base-content dark:bg-none">
+                    dark:bg-base-100 dark:text-base-content dark:bg-none"> {/* <--- ADDED dark:bg-none HERE */}
+      {/* Header section content (within HomePage) */}
       <div className="px-6 py-10 max-w-7xl mx-auto text-center">
-        <h1 className="text-4xl font-extrabold mb-3 tracking-tight">
-          🚀 Online Judge
-        </h1>
+        <h1 className="text-4xl font-extrabold mb-3 tracking-tight">🚀 Online Judge</h1>
         <p className="text-lg text-gray-700 dark:text-gray-300">
           {isLoggedIn ? (
             <>Logged in as <span className="font-medium text-purple-700 dark:text-primary">
@@ -29,13 +32,13 @@ const HomePage = () => {
         </p>
       </div>
 
+      {/* Cards section */}
       <div className="max-w-6xl mx-auto px-4 py-10 grid gap-10 md:grid-cols-2">
+        {/* Compiler Card */}
         <div className="rounded-3xl shadow-lg border border-gray-200 p-8 hover:shadow-2xl transition-transform transform hover:-translate-y-1
                     bg-pink-400 dark:bg-base-200
                     text-gray-800 dark:text-base-content">
-          <h2 className="text-2xl font-bold mb-3">
-            🔧 Online Compiler
-          </h2>
+          <h2 className="text-2xl font-bold mb-3">🔧 Online Compiler</h2>
           <p className="text-gray-600 mb-6 dark:text-gray-300">
             Run code instantly without logging in. Supports C++, Python, Java, and more!
           </p>
@@ -48,12 +51,11 @@ const HomePage = () => {
           </Link>
         </div>
 
+        {/* Problems Card */}
         <div className="rounded-3xl shadow-lg border border-gray-200 p-8 hover:shadow-2xl transition-transform transform hover:-translate-y-1
                     bg-green-400 dark:bg-base-200
                     text-gray-800 dark:text-base-content">
-          <h2 className="text-2xl font-bold mb-3">
-            📚 Solve Coding Problems
-          </h2>
+          <h2 className="text-2xl font-bold mb-3">📚 Solve Coding Problems</h2>
           <p className="text-gray-600 mb-6 dark:text-gray-300">
             Challenge yourself with real-world problems. Track progress and submit solutions.
           </p>
