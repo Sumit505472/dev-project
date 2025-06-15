@@ -12,9 +12,14 @@ const ProblemDetail = () => {
     const [verdict, setVerdict] = useState(""); // For general verdict display
     const [input, setInput] = useState("");
     const [output, setOutput] = useState(""); // For run output
-    const [submissionDetails, setSubmissionDetails] = useState(null); // NEW: To store full submission results
+    const [submissionDetails, setSubmissionDetails] = useState(null); // To store full submission results
     const [fullscreen, setFullscreen] = useState(false);
-    const [showInput, setShowInput] = useState(true);
+    
+    // Controls visibility of the entire bottom console section.
+    const [showConsole, setShowConsole] = useState(true); 
+
+    // State for AI Review panel maximization
+    const [isAiReviewMaximized, setIsAiReviewMaximized] = useState(false);
 
     const [leftWidth, setLeftWidth] = useState(50); // % width of left panel
     const [editorHeightPercent, setEditorHeightPercent] = useState(60); // % height of editor in right panel
@@ -77,7 +82,6 @@ const ProblemDetail = () => {
     const monacoLanguageMap = {
         cpp: "cpp",
         python: "python",
-        java: "java", // Ensure Java is mapped if your backend supports it
         c: "c",
     };
 
@@ -88,6 +92,8 @@ const ProblemDetail = () => {
         setVerdict(""); // Clear verdict
         setOutput(""); // Clear previous output
         setSubmissionDetails(null); // Clear previous submission results
+        setShowAireview(false); // Hide AI review when running/submitting
+        setShowConsole(true); // Ensure console is visible when running
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, { code, language, input });
             if (data.error) {
@@ -111,6 +117,8 @@ const ProblemDetail = () => {
         setVerdict(""); // Clear verdict
         setOutput(""); // Clear previous output (as detailed results will be shown)
         setSubmissionDetails(null); // Clear previous submission details
+        setShowAireview(false); // Hide AI review when running/submitting
+        setShowConsole(true); // Ensure console is visible when running/submitting
 
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/submit`, { code, language, problemId: id }, { withCredentials: true });
@@ -136,6 +144,18 @@ const ProblemDetail = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Handler to clear submission results
+    const handleClearResults = () => {
+        setSubmissionDetails(null);
+        setOutput("");
+        setVerdict(""); // Reset verdict
+    };
+
+    // Handler to toggle AI Review panel size
+    const toggleAiReviewMaximize = () => {
+        setIsAiReviewMaximized(prev => !prev);
     };
 
     const getDifficultyClass = (difficulty) => {
@@ -236,12 +256,11 @@ const ProblemDetail = () => {
                         <select id="language-select" value={language} onChange={(e) => setLanguage(e.target.value)} className="p-1 border rounded text-sm">
                             <option value="cpp">C++</option>
                             <option value="python">Python</option>
-                            <option value="java">Java</option> {/* Ensure this is here if backend supports */}
                             <option value="c">C</option>
                         </select>
                     </div>
                     <button onClick={toggleFullscreen} title={fullscreen ? "Minimize" : "Maximize"} className="px-2 py-1 text-lg font-bold bg-gray-300 rounded hover:bg-gray-400">
-                        {fullscreen ? "◀" : "▶"}
+                        {fullscreen ? "🗕" : "🗖"} {/* Maximize/Minimize button for editor */}
                     </button>
                 </div>
 
@@ -249,64 +268,84 @@ const ProblemDetail = () => {
                     <Editor height="100%" language={monacoLanguageMap[language]} theme="vs-dark" value={code} onChange={(val) => setCode(val)} options={{ fontSize: 16, minimap: { enabled: false }, automaticLayout: true, scrollBeyondLastLine: false }} />
                 </div>
 
-                {!fullscreen && showInput && <div onMouseDown={handleHorizontalMouseDown} className="h-1.5 cursor-row-resize bg-gray-200 hover:bg-blue-300 transition-colors" />}
+                {/* Horizontal divider (only shown if console is visible and not fullscreen) */}
+                {!fullscreen && showConsole && <div onMouseDown={handleHorizontalMouseDown} className="h-1.5 cursor-row-resize bg-gray-200 hover:bg-blue-300 transition-colors" />}
                 
-                {/* Conditional Rendering of AI Review, Input/Output, or Submission Results */}
+                {/* Conditional Rendering of AI Review or Console (Input/Output/Results) */}
                 {showAireview ? (
-                    <div className="border-t border-gray-300 p-4 bg-gray-50 flex-grow overflow-auto">
-                        <Aireview code={code} />
+                    <div className={`border-t border-gray-300 p-4 bg-gray-50 flex flex-col ${isAiReviewMaximized ? 'flex-grow' : 'h-64'}`}> {/* Dynamic height */}
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-semibold text-gray-800">AI Code Review</h3>
+                            {/* Expand/Collapse Button for AI Review - using square-like symbols */}
+                            <button 
+                                onClick={toggleAiReviewMaximize} 
+                                className="px-3 py-1 text-lg font-bold rounded bg-gray-200 hover:bg-gray-300"
+                                title={isAiReviewMaximized ? "Collapse AI Review" : "Expand AI Review"}
+                            >
+                                {isAiReviewMaximized ? "🗕" : "🗖"} {/* Collapse/Expand button for AI review */}
+                            </button>
+                        </div>
+                        <div className="flex-grow overflow-auto">
+                            <Aireview code={code} />
+                        </div>
                     </div>
                 ) : (
-                    // Show Input/Output for /run OR Submission Details for /submit
-                    !fullscreen && (
+                    // Show Console (Input/Output/Results) if not fullscreen and showConsole is true
+                    !fullscreen && showConsole && (
                         <div className="bg-gray-50 p-4 space-y-4 flex-grow overflow-auto">
-                            {/* Display simple output from /run */}
-                            {!submissionDetails && showInput && (
+                            {/* Display simple output from /run OR custom input area */}
+                            {!submissionDetails ? ( // Only show input/output if no submission details
                                 <>
-                                    <textarea rows={4} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter custom input here" className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" />
+                                    <textarea 
+                                        rows={4} 
+                                        value={input} 
+                                        onChange={(e) => setInput(e.target.value)} 
+                                        placeholder="Enter custom input here" 
+                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" 
+                                    />
                                     {output && <div className="bg-white p-3 border rounded text-sm font-mono whitespace-pre-wrap overflow-auto">{output}</div>}
                                 </>
-                            )}
-
-                            {/* Display detailed submission results from /submit */}
-                            {submissionDetails && submissionDetails.results && submissionDetails.results.length > 0 && (
-                                <div className="mt-4 bg-white shadow-md rounded-lg overflow-hidden">
-                                    <h3 className="text-xl font-semibold text-gray-800 p-4 border-b">Detailed Test Results</h3>
-                                    <div className="overflow-x-auto"> {/* Added for horizontal scrolling on small screens */}
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Input</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error/Stderr</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {submissionDetails.results.map((res, index) => (
-                                                    <tr key={index} className={res.passed ? 'bg-green-50' : 'bg-red-50'}>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {index + 1}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${res.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                                {res.passed ? 'Passed' : 'Failed'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.input}</td>
-                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.expected}</td>
-                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.actual}</td>
-                                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-red-700 font-mono max-w-xs overflow-x-auto">
-                                                            {res.error || res.stderr || ''}
-                                                        </td>
+                            ) : (
+                                // Display detailed submission results from /submit
+                                submissionDetails.results && submissionDetails.results.length > 0 && (
+                                    <div className="mt-4 bg-white shadow-md rounded-lg overflow-hidden">
+                                        <h3 className="text-xl font-semibold text-gray-800 p-4 border-b">Detailed Test Results</h3>
+                                        <div className="overflow-x-auto"> {/* Added for horizontal scrolling on small screens */}
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Input</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error/Stderr</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-gray-200">
+                                                    {submissionDetails.results.map((res, index) => (
+                                                        <tr key={index} className={res.passed ? 'bg-green-50' : 'bg-red-50'}>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                {index + 1}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${res.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                                    {res.passed ? 'Passed' : 'Failed'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.input}</td>
+                                                            <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.expected}</td>
+                                                            <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 font-mono max-w-xs overflow-x-auto">{res.actual}</td>
+                                                            <td className="px-6 py-4 whitespace-pre-wrap text-sm text-red-700 font-mono max-w-xs overflow-x-auto">
+                                                                {res.error || res.stderr || ''}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             )}
                         </div>
                     )
@@ -317,7 +356,19 @@ const ProblemDetail = () => {
                         Verdict: <span className={verdict === "Accepted" ? "text-green-600" : (verdict && verdict !== "Output Display" ? "text-red-600" : "text-gray-500")}>{verdict || "Not Run"}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <button onClick={() => setShowInput(!showInput)} className="text-sm px-3 py-1.5 bg-gray-200 rounded hover:bg-gray-300" title={showInput ? "Hide Input" : "Show Input"}>{showInput ? "⌄" : "⌃"}</button>
+                        {/* Clear Results Button - appears only when submissionDetails are present */}
+                        {submissionDetails && (
+                            <button 
+                                onClick={handleClearResults} 
+                                className="px-4 py-1.5 text-white text-sm rounded transition bg-gray-600 hover:bg-gray-700"
+                            >
+                                Clear Results
+                            </button>
+                        )}
+                       
+                        <button onClick={() => setShowConsole(!showConsole)} className="px-3 py-1.5 text-lg font-bold bg-gray-200 rounded hover:bg-gray-300" title={showConsole ? "Hide Console" : "Show Console"}>
+                            {showConsole ? "➖" : "➕"} {/* Minus for hide, Plus for show */}
+                        </button>
                         <button onClick={() => setShowAireview((p) => !p)} className={`px-4 py-1.5 text-white text-sm rounded transition ${showAireview ? "bg-purple-700" : "bg-purple-600 hover:bg-purple-700"}`}>
                             {showAireview ? "Hide AI" : "AI Review"}
                         </button>
