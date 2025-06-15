@@ -10,10 +10,7 @@ const HomePage = () => {
   const isLoggedIn = user && Object.keys(user).length > 0;
 
   return (
-    // Main container div:
-    // Original light mode gradient and text color are the DEFAULT (light mode) styles.
-    // dark:bg-base-100 and dark:text-base-content apply in dark mode.
-    // Crucially: dark:bg-none is added to explicitly remove the gradient in dark mode.
+   
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 text-gray-900
                     dark:bg-base-100 dark:text-base-content dark:bg-none"> {/* <--- ADDED dark:bg-none HERE */}
       {/* Header section content (within HomePage) */}
@@ -40,7 +37,7 @@ const HomePage = () => {
                     text-gray-800 dark:text-base-content">
           <h2 className="text-2xl font-bold mb-3">🔧 Online Compiler</h2>
           <p className="text-gray-600 mb-6 dark:text-gray-300">
-            Run code instantly without logging in. Supports C++, Python, Java, and more!
+            Run code instantly without logging in.
           </p>
           <Link to="/compiler">
             <button className="px-6 py-2 rounded-lg text-sm font-semibold transition duration-300 ease-in-out
