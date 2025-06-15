@@ -27,7 +27,7 @@ const ensureDirExists = async (dir) => {
 
 const executeJava = async (filePath, inputFilePath) => {
     const jobId = path.basename(filePath).split('.')[0];
-    const className = jobId; // Java main class name must match file name
+    const className = path.basename(filePath, '.java'); 
     const jobDir = path.dirname(filePath); // The unique directory created for this Java job
 
     // Ensure job directory exists for compilation output (e.g., .class files)
