@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { useAuth } from "../contexts/AuthContext";
@@ -18,7 +19,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-300 via-purple-100 to-green-400 text-gray-900
+    <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-100 to-green-300 text-gray-900
                     dark:bg-base-100 dark:text-base-content dark:bg-none">
       {/* Header section content (within HomePage) */}
       <div className="px-6 py-10 max-w-7xl mx-auto text-center">
