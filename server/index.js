@@ -5,44 +5,46 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
-import cookies from "cookies";
 import cors from "cors";
-import path from 'path'; // Import path module
-import { fileURLToPath } from "url"; // Import fileURLToPath for ES Modules
-import fs from "fs/promises"; // Import fs with promises for async operations
+import path from 'path';
+import { fileURLToPath } from "url"; 
+import fs from "fs/promises"; 
+import { v4 as uuid } from "uuid"; // FIX: Import uuid here
 
-
-import DBConnection from "./database/db.js";
+// Database connection and models
+import DBConnection from "./database/db.js"; 
 import User from "./models/user.js";
+import Problem from "./models/problem.js";
+import Testcase from "./models/testcase.js";
+import Submission from "./models/submission.js";
 
-// Ensure these imports correctly point to your helper files
+// Code execution utilities
 import generateFile from "./generatefile.js";
+import cleanupFiles from "./cleanupFiles.js"; 
+
 import executeCpp from "./execute/executecpp.js";
 import executeC from "./execute/executec.js";
 import executeJava from "./execute/executejava.js";
 import executePython from "./execute/executepython.js";
-import Problem from "./models/problem.js";
-import generateInputFile from "./generateInputFile.js";
-import {v4 as uuid} from "uuid"; // uuid is used in generateFile/InputFile, ensure it's available
-import Testcase from "./models/testcase.js";
-import Submission from "./models/submission.js";
+
+// AI Code Review
 import aiCodeReview from "./aicodeReview.js";
-import authMiddleware from "./middleware/authmiddleware.js"
-import subRoutes from "./routes/submissionroutes.js"
+
+// Middleware
+import authMiddleware from "./middleware/authmiddleware.js";
+import subRoutes from "./routes/submissionroutes.js"; 
 
 const app = express();
 DBConnection();
 
-// IMPORTANT: Define __filename, __dirname
+// IMPORTANT: Define __filename, __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// Define the base output path here once
-const outputPath = path.join(__dirname, "execute", "outputs"); 
-
-
+    
+// Salt rounds for bcrypt hashing
 const saltRounds = 10;
 
-// Middleware
+// --- Middleware ---
 app.use(cors({
     origin: [
         'http://localhost:5173',
@@ -91,18 +93,19 @@ app.post("/register", async (req, res) => {
         });
 
         newUser.token = token;
-        newUser.password = undefined;
+        newUser.password = undefined; // Remove password from object before sending
 
         res.cookie("token", token, {
-            expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+            expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // 1 day expiration
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            domain: '.codedge.online'
+            secure: true, // Only send over HTTPS
+            sameSite: 'None', // Required for cross-site cookies
+            domain: '.codedge.online' // Ensure this matches your domain
         });
 
         res.status(200).json({
             message: "You have successfully registered",
+            success: true,
         });
     } catch (error) {
         console.error("Registration failed", error);
@@ -137,14 +140,14 @@ app.post("/login", async (req, res) => {
         });
 
         userExists.token = token;
-        userExists.password = undefined;
+        userExists.password = undefined; // Remove password from object before sending
 
         const options = {
-            expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+            expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // 1 day expiration
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            domain: '.codedge.online'
+            secure: true, // Only send over HTTPS
+            sameSite: 'None', // Required for cross-site cookies
+            domain: '.codedge.online' // Ensure this matches your domain
         };
         res.status(200).cookie("token", token, options).json({
             message: "You have successfully logged in!",
@@ -180,7 +183,7 @@ app.get('/me', async (req, res) => {
     }
 });
 
-// --- Code Execution Route ---
+// --- Code Execution Route (for simple run, not judge) ---
 app.post("/run", async (req, res) => {
     const { language = "cpp", code, input } = req.body;
 
@@ -191,146 +194,99 @@ app.post("/run", async (req, res) => {
         });
     }
 
-    let filePath = null;
-    let inputFilePath = null;
-    let jobDirForJava = null; // To keep track of temporary directories for Java cleanup
+    let fileDetailsForCleanup = {};
 
     try {
-        // generateFile will create a unique directory within dirCodes for Java,
-        // and its path will be in filePath.
-        filePath = generateFile(language, code);
-        inputFilePath = generateInputFile(input);
-
-        // For Java, extract the job directory path from filePath for later cleanup
-        if (language === 'java') {
-            jobDirForJava = path.dirname(filePath);
-        }
+        const { 
+            sourceFilePath, 
+            inputFilePath, 
+            outputFilePath, 
+            language: jobLanguage, 
+            jobId, 
+            sourceFilename, 
+            inputFilename, 
+            outputFilename 
+        } = generateFile(language, code, input);
+        
+        fileDetailsForCleanup = { language: jobLanguage, jobId, sourceFilename, inputFilename, outputFilename };
 
         let output;
-        switch (language) {
+        switch (jobLanguage) {
             case "cpp":
-                output = await executeCpp(filePath, inputFilePath, outputPath); // PASS outputPath
+                output = await executeCpp(sourceFilePath, inputFilePath, outputFilePath);
                 break;
             case "c":
-                output = await executeC(filePath, inputFilePath, outputPath); // PASS outputPath
+                output = await executeC(sourceFilePath, inputFilePath, outputFilePath);
                 break;
             case "java":
-                // executeJava itself handles cleanup of its specific jobDir
-                output = await executeJava(filePath, inputFilePath);
+                output = await executeJava(sourceFilePath, inputFilePath, outputFilePath);
                 break;
             case "python":
-                output = await executePython(filePath, inputFilePath);
+                output = await executePython(sourceFilePath, inputFilePath, outputFilePath);
                 break;
             default:
-                return res.status(400).json({ error: "Unsupported language" });
+                return res.status(400).json({ success: false, error: "Unsupported language" });
         }
 
-        // Send success response
-        res.json({ output });
+        return res.json({ success: true, output });
 
     } catch (err) {
-        // Enhanced error handling for user feedback
-        console.error("Error in running code:", err); // Log the full error object for debugging
+        console.error("Error in /run route:", err); 
 
         let errorMessage = "An unknown error occurred during execution.";
-        let statusCode = 500; // Default to internal server error
+        let statusCode = 500; 
 
         if (typeof err === 'object' && err !== null) {
-            // Check for specific error messages from child_process.exec or our execute functions
-            if (err.error) { // This captures the 'error' field from our rejected Promises
+            if (err.error) { 
                 errorMessage = err.error;
-                statusCode = 400; // Assume user code error or compilation error initially
-
-                // Refine for server configuration issues
-                if (typeof err.error === 'string' && (err.error.includes('command not found') || err.error.includes('No such file or directory'))) {
-                    errorMessage = "Server configuration error: Compiler/Interpreter not found or path issue. Please contact administrator.";
-                    statusCode = 500; // This is a server-side problem, not user code
-                }
+                statusCode = 400; 
             } else if (err.message) {
-                // General JS errors or exec errors not specifically caught by our helper,
-                // but might still indicate an issue related to the command execution.
                 errorMessage = err.message;
                 statusCode = 500;
             }
 
-            // Append stderr for more detail if available and it's a string
             if (err.stderr && typeof err.stderr === 'string' && err.stderr.trim() !== '') {
                 errorMessage += `\nStderr: ${err.stderr.trim()}`;
             }
-             // Append stdout if it contains useful compilation output (e.g. for Java)
             if (err.stdout && typeof err.stdout === 'string' && err.stdout.trim() !== '') {
                 errorMessage += `\nStdout: ${err.stdout.trim()}`;
             }
-
         } else if (typeof err === 'string') {
-            errorMessage = err; // If the error is just a string
+            errorMessage = err; 
             statusCode = 500;
         }
 
-        // Send the error response to the frontend
-        res.status(statusCode).json({ success: false, error: errorMessage });
+        return res.status(statusCode).json({ success: false, error: errorMessage });
 
     } finally {
-        // Clean up temporary code and input files (critical for disk space and security)
-        const filesToDelete = [inputFilePath]; // inputFilePath is always cleaned
-
-        // For C/C++/Python, delete the source file
-        if (filePath && (language === 'cpp' || language === 'c' || language === 'python')) {
-            filesToDelete.push(filePath);
-        }
-
-        // For C/C++, also delete the compiled executable
-        if (filePath && (language === 'cpp' || language === 'c')) {
-            const jobId = path.basename(filePath).split(".")[0];
-            const output_filename = `${jobId}.out`; // Linux executable name
-            const outPath = path.join(outputPath, output_filename); // Uses the globally defined outputPath
-            filesToDelete.push(outPath);
-        }
-
-        // Clean up all collected files
-        for (const file of filesToDelete) {
-            if (file) { // Ensure file path is not null/undefined
-                fs.unlink(file)
-                    .then(() => console.log(`Successfully deleted: ${file}`))
-                    .catch(unlinkErr => console.error(`Failed to delete file ${file}:`, unlinkErr));
-            }
-        }
-
-        // Java's jobDir cleanup is handled within executeJava itself, but if you want
-        // to be absolutely sure in case of early errors before executeJava is called:
-        // (This part might be redundant if executeJava's internal cleanup is robust)
-        if (jobDirForJava && language === 'java') {
-            fs.rm(jobDirForJava, { recursive: true, force: true })
-                .then(() => console.log(`Successfully deleted Java job dir: ${jobDirForJava}`))
-                .catch(err => console.error("Failed to clean up Java job dir from /run finally:", err));
-        }
+        await cleanupFiles(fileDetailsForCleanup);
     }
 });
 
 // --- Problem and Testcase Routes ---
-app.post("/add",async(req,res)=>{
-    const question=req.body;
-    try{
+app.post("/add", async (req, res) => {
+    const question = req.body;
+    try {
         console.log("Received problem:", req.body);
         const newProblem = new Problem(question);
         await newProblem.save();
         res.status(200).json({
-            success:true,
-            message:"Problem added successfully"
+            success: true,
+            message: "Problem added successfully"
         });
-    }catch(error){
+    } catch (error) {
         res.status(500).json({
-            success:false,
-            error:error.message
-        })
+            success: false,
+            error: error.message
+        });
     }
 });
 
 app.post("/testcases", async (req, res) => {
-    const test_cases = req.body; // should be an array
+    const test_cases = req.body; 
     try {
         console.log("Received test cases:", test_cases);
-        await Testcase.insertMany(test_cases);
+        await Testcase.insertMany(test_cases); 
         res.status(200).json({
             success: true,
             message: "All test cases saved successfully",
@@ -343,18 +299,18 @@ app.post("/testcases", async (req, res) => {
     }
 });
 
-app.get("/problem",async(req,res)=>{
-    try{
+app.get("/problem", async (req, res) => {
+    try {
         const problems = await Problem.find({});
         res.status(200).json({
-            success:true,
+            success: true,
             problems
-        })
-    }catch(error){
+        });
+    } catch (error) {
         res.status(500).json({
-            success:false,
-            error:error.message
-        })
+            success: false,
+            error: error.message
+        });
     }
 });
 
@@ -368,7 +324,7 @@ app.get('/problem/:id', async (req, res) => {
     }
 });
 
-// --- Submission Route ---
+// --- Submission Route (for judge with test cases) ---
 app.post("/submit", authMiddleware, async (req, res) => {
     const { code, language, problemId } = req.body;
 
@@ -379,21 +335,21 @@ app.post("/submit", authMiddleware, async (req, res) => {
         });
     }
 
-    let codeFilePath = null;
-    let jobDirForJava = null; // For Java-specific directory cleanup
+    let fileDetailsForCleanup = {};
 
     try {
-        codeFilePath = generateFile(language, code); // This also handles Java's unique jobDir
-        if (language === 'java') {
-            jobDirForJava = path.dirname(codeFilePath);
-        }
+        const { 
+            sourceFilePath, 
+            language: jobLanguage, 
+            jobId, 
+            sourceFilename 
+        } = generateFile(language, code, null); 
+        
+        fileDetailsForCleanup = { language: jobLanguage, jobId, sourceFilename };
 
         const problem = await Problem.findById(problemId);
         if (!problem) {
-            return res.status(404).json({
-                success: false,
-                error: "Problem not found",
-            });
+            return res.status(404).json({ success: false, error: "Problem not found" });
         }
 
         const testCases = await Testcase.find({ problemId });
@@ -402,62 +358,66 @@ app.post("/submit", authMiddleware, async (req, res) => {
         let results = [];
 
         for (const testCase of testCases) {
-            const inputFilePath = generateInputFile(testCase.input);
+            const testInputId = uuid(); // uuid is used here
+            const inputFilename = `${jobId}_${testInputId}.txt`; 
+            const inputFilePath = path.join(path.join("/app", "inputs"), inputFilename);
+            await fs.writeFile(inputFilePath, testCase.input);
+            
+            const outputFilename = `${jobId}_${testInputId}.out`; 
+            const outputFilePath = path.join(path.join("/app", "execute", "outputs"), outputFilename);
+            
+            fileDetailsForCleanup.inputFilename = inputFilename; 
+            fileDetailsForCleanup.outputFilename = outputFilename; 
+
             let actualOutput = "";
-            let executionErrorDetails = null; // To store error from execution for current test case
+            let executionErrorDetails = null; 
 
             try {
-                switch (language) {
+                switch (jobLanguage) {
                     case "cpp":
-                        actualOutput = await executeCpp(codeFilePath, inputFilePath, outputPath); // PASS outputPath
+                        actualOutput = await executeCpp(sourceFilePath, inputFilePath, outputFilePath);
                         break;
                     case "c":
-                        actualOutput = await executeC(codeFilePath, inputFilePath, outputPath); // PASS outputPath
+                        actualOutput = await executeC(sourceFilePath, inputFilePath, outputFilePath);
                         break;
                     case "java":
-                        actualOutput = await executeJava(codeFilePath, inputFilePath);
+                        actualOutput = await executeJava(sourceFilePath, inputFilePath, outputFilePath);
                         break;
                     case "python":
-                        actualOutput = await executePython(codeFilePath, inputFilePath);
+                        actualOutput = await executePython(sourceFilePath, inputFilePath, outputFilePath);
                         break;
                     default:
-                        // This should ideally be caught by the outer /run route, but as a fallback
                         throw new Error("Unsupported language for submission testing.");
                 }
             } catch (execErr) {
-                // If code execution fails for a specific test case, record the error and mark as failed.
-                allPassed = false; // Mark submission as failed
+                allPassed = false; 
                 executionErrorDetails = {
                     error: execErr.error || execErr.message || "Unknown execution error",
                     stderr: execErr.stderr || "",
                     stdout: execErr.stdout || ""
                 };
-                actualOutput = "Execution Error"; // Placeholder for actual output if it failed
+                actualOutput = "Execution Error"; 
                 console.error(`Execution failed for test case (Problem ID: ${problemId}, Test Case Input: ${testCase.input}):`, executionErrorDetails);
-                // Do NOT return here, continue processing other test cases if possible,
-                // or just mark this one as failed.
             } finally {
-                // Clean up input file after each test case
-                if (inputFilePath) {
-                    fs.unlink(inputFilePath)
-                        .then(() => console.log(`Deleted input file: ${inputFilePath}`))
-                        .catch(unlinkErr => console.error(`Failed to delete input file ${inputFilePath}:`, unlinkErr));
+                try {
+                    await fs.unlink(inputFilePath);
+                    console.log(`Deleted test input file: ${inputFilePath}`);
+                } catch (err) {
+                    if (err.code !== 'ENOENT') { console.error(`Failed to delete test input file ${inputFilePath}:`, err.message); }
                 }
             }
 
-            // If an execution error occurred for this test case, store that as the result
             if (executionErrorDetails) {
-                 results.push({
+                results.push({
                     input: testCase.input,
                     expected: testCase.output.trim(),
-                    actual: actualOutput, // Will be "Execution Error"
+                    actual: actualOutput, 
                     passed: false,
                     error: executionErrorDetails.error,
                     stderr: executionErrorDetails.stderr,
                     stdout: executionErrorDetails.stdout
                 });
             } else {
-                // Only trim outputs if no execution error occurred, as actualOutput might be "Execution Error"
                 const passed = actualOutput.trim() === testCase.output.trim();
                 if (!passed) allPassed = false;
                 results.push({
@@ -470,11 +430,11 @@ app.post("/submit", authMiddleware, async (req, res) => {
         }
 
         const newSubmission = new Submission({
-            user: req.user._id,
+            user: req.user._id, 
             problem: problemId,
             code,
             language,
-            verdict: allPassed ? "Accepted" : "Wrong Answer", // If any test case failed, it's Wrong Answer
+            verdict: allPassed ? "Accepted" : "Wrong Answer", 
             results,
         });
 
@@ -487,36 +447,14 @@ app.post("/submit", authMiddleware, async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Submission failed at top-level catch:", err); // Log the full error
-        // Generic error for the entire submission process if something unexpected happens
+        console.error("Submission failed at top-level catch:", err); 
         return res.status(500).json({
             success: false,
             error: "Internal server error during submission process.",
-            details: err.message || JSON.stringify(err) // Provide more detail for debugging
+            details: err.message || JSON.stringify(err) 
         });
     } finally {
-        // Clean up the main submitted code file for cpp/c/python
-        if (codeFilePath && (language === 'cpp' || language === 'c' || language === 'python')) {
-            fs.unlink(codeFilePath)
-                .then(() => console.log(`Deleted code file: ${codeFilePath}`))
-                .catch(unlinkErr => console.error(`Failed to delete code file ${codeFilePath}:`, unlinkErr));
-        }
-        // For C/C++, also delete the compiled executable from the correct outputs path
-        if (codeFilePath && (language === 'cpp' || language === 'c')) {
-            const jobId = path.basename(codeFilePath).split(".")[0];
-            const output_filename = `${jobId}.out`;
-            const outPath = path.join(outputPath, output_filename); // Uses the globally defined outputPath
-            fs.unlink(outPath)
-                .then(() => console.log(`Deleted executable: ${outPath}`))
-                .catch(unlinkErr => console.error(`Failed to delete executable ${outPath}:`, unlinkErr));
-        }
-        // Java's jobDir cleanup is handled within executeJava itself,
-        // but this ensures any early failures still attempt cleanup.
-        if (jobDirForJava && language === 'java') {
-            fs.rm(jobDirForJava, { recursive: true, force: true })
-                .then(() => console.log(`Deleted Java job dir: ${jobDirForJava}`))
-                .catch(err => console.error("Failed to clean up Java job dir from /submit finally:", err));
-        }
+        await cleanupFiles(fileDetailsForCleanup);
     }
 });
 
@@ -540,7 +478,7 @@ app.post("/ai-review", async (req, res) => {
             review: review,
         });
     } catch (error) {
-        console.error("AI review error:", error); // log for debugging
+        console.error("AI review error:", error); 
         return res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -554,3 +492,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
