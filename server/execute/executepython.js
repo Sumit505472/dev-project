@@ -1,61 +1,63 @@
-import { exec } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs/promises'; // Use fs/promises for async file operations
+    import fs from "fs/promises"; 
+    import path from "path";
+    import { fileURLToPath } from "url";
+    import { exec } from "child_process";
 
-// Get __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-// Define directories for code (relative to this file)
-const dirCodes = path.join(__dirname, '..', 'codes');
-// No specific output directory needed for Python as it's interpreted
-
-// Function to ensure a directory exists (reusable helper)
-const ensureDirExists = async (dir) => {
-    try {
-        await fs.access(dir); // Check if directory exists
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            await fs.mkdir(dir, { recursive: true }); // Create if it doesn't exist
-            console.log(`Created directory: ${dir}`);
-        } else {
-            throw error; // Re-throw other errors
-        }
-    }
-};
-
-const executePython = async (filePath, inputFilePath) => {
-    // Ensure the directory where code is written exists
-    await ensureDirExists(path.dirname(filePath));
-
-    return new Promise((resolve, reject) => {
-        // Execute Python code
-        // Python doesn't compile to an executable, so we run the script directly.
-        exec(
-            `python3 ${filePath} < ${inputFilePath}`, // Use python3 as is common on Linux
-            async (error, stdout, stderr) => {
-                // Clean up source file and input file after execution attempt
-                await fs.unlink(filePath)
-                    .then(() => console.log(`Successfully deleted: ${filePath}`))
-                    .catch(err => console.error(`Failed to delete file ${filePath}:`, err));
-                await fs.unlink(inputFilePath)
-                    .then(() => console.log(`Successfully deleted: ${inputFilePath}`))
-                    .catch(err => console.error(`Failed to delete file ${inputFilePath}:`, err));
-
-                if (error) {
-                    console.error('Python Runtime Error:', stderr || stdout || error.message);
-                    return reject({ error: "Runtime Error", details: stderr || stdout || error.message });
-                }
-                if (stderr) {
-                    console.warn('Python Stderr during execution:', stderr);
-                    // For judge, anything in stderr is usually an error.
-                    return reject({ error: "Runtime Error", details: stderr });
-                }
-                resolve(stdout);
+    const outputPath = path.join("/app", "execute", "outputs"); 
+    (async () => {
+        try {
+            await fs.access(outputPath); 
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                await fs.mkdir(outputPath, { recursive: true });
+                console.log(`Created output directory: ${outputPath}`);
+            } else {
+                console.error(`Error accessing or creating output directory ${outputPath}:`, error);
             }
-        );
-    });
-};
+        }
+    })();
 
-export default executePython;
+    /**
+     * Executes Python code.
+     * @param {string} filePath - Path to the Python source file.
+     * @param {string} inputFilePath - Path to the input file (can be null for no input).
+     * @param {string} outputFilePath - Path to the output file to redirect stdout.
+     * @returns {Promise<string>} - A promise that resolves with stdout or rejects with an error object.
+     */
+    const executePython = (filePath, inputFilePath, outputFilePath) => { // ADDED outputFilePath parameter
+        return new Promise((resolve, reject) => {
+            // Determine the execution command based on whether inputFilePath is provided
+            const executionCommand = inputFilePath 
+                ? `python3 "${filePath}" < "${inputFilePath}"` // With input redirection
+                : `python3 "${filePath}"`;                     // Without input redirection
+
+            exec(
+                `${executionCommand} > "${outputFilePath}"`, // Redirect stdout to outputFilePath
+                async (runError, stdoutRun, stderrRun) => {
+                    if (runError) {
+                        console.error('Python Runtime Error:', stderrRun || stdoutRun || runError.message);
+                        return reject({ error: "Runtime Error", details: stderrRun || stdoutRun || runError.message });
+                    }
+                    if (stderrRun) {
+                        console.warn('Python Stderr during execution:', stderrRun);
+                        return reject({ error: "Runtime Error", details: stderrRun });
+                    }
+                    
+                    // Read output from the file
+                    try {
+                        const output = await fs.readFile(outputFilePath, 'utf8');
+                        resolve(output);
+                    } catch (readError) {
+                        console.error('Failed to read output file:', readError);
+                        reject({ error: "Output Read Error", details: readError.message });
+                    }
+                }
+            );
+        });
+    };
+
+    export default executePython;
+    
