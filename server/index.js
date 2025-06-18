@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); // Ensure this is at the very top
+dotenv.config(); 
 
 import express from "express";
 import bcrypt from "bcryptjs";
@@ -17,6 +17,7 @@ import User from "./models/user.js";
 import Problem from "./models/problem.js";
 import Testcase from "./models/testcase.js";
 import Submission from "./models/submission.js";
+
 
 // Code execution utilities
 import generateFile from "./generatefile.js";
@@ -231,7 +232,12 @@ app.post("/run", async (req, res) => {
         return res.json({ success: true, output });
 
     } catch (err) {
+<<<<<<< HEAD
         console.error("Error in /run route:", err); 
+=======
+        
+        console.error("Error in running code:", err); // Log the full error object for debugging
+>>>>>>> 7c20fe5305a400167da08427ade86b6ea7623a00
 
         let errorMessage = "An unknown error occurred during execution.";
         let statusCode = 500; 
