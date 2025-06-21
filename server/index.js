@@ -232,12 +232,10 @@ app.post("/run", async (req, res) => {
         return res.json({ success: true, output });
 
     } catch (err) {
-<<<<<<< HEAD
-        console.error("Error in /run route:", err); 
-=======
+
         
         console.error("Error in running code:", err); // Log the full error object for debugging
->>>>>>> 7c20fe5305a400167da08427ade86b6ea7623a00
+
 
         let errorMessage = "An unknown error occurred during execution.";
         let statusCode = 500; 
