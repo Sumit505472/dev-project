@@ -35,40 +35,51 @@ function Compiler() {
   const handleRunCode = async () => {
     setLoading(true);
     setError("");
-    setOutput(""); // Clear previous output and error
-
+    setOutput("");
+  
     try {
       const payload = {
         code,
         language,
         input,
       };
-
+  
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, payload);
-
+  
       if (res.data.error || res.data.stderr) {
-        setOutput(""); // Clear output if there's an error
-        let fullErrorMessage = res.data.error || res.data.stderr || "Unknown execution error.";
+        setOutput("");
+        const fullErrorMessage = res.data.error || res.data.stderr || "Unknown execution error.";
         setError(fullErrorMessage);
       } else {
-        setError(""); // Clear error if successful
+        setError("");
         setOutput(res.data.output);
       }
+  
     } catch (err) {
-      setOutput(""); // Clear output on API request error
+      // ✅ Handle backend TLE or other errors returned with 400
+      setOutput("");
       let errorMessage = "An unexpected error occurred.";
+  
       if (err.response) {
-        errorMessage = err.response.data?.error || err.response.data?.message || err.response.statusText || `Server responded with status ${err.response.status}`;
+        console.log("Server Error Response:", err.response.data); // ✅ Debug print
+        errorMessage =
+          err.response.data?.error ||
+          err.response.data?.message ||
+          err.response.statusText ||
+          `Server responded with status ${err.response.status}`;
       } else if (err.request) {
-        errorMessage = "No response from server. Check network connection or backend URL.";
+        errorMessage = "No response from server. Check your network or backend.";
       } else {
         errorMessage = err.message;
       }
+  
       setError(errorMessage);
+  
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
    
