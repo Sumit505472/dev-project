@@ -23,7 +23,7 @@ const Header = () => {
         className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 text-transparent bg-clip-text hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-blue-400 rounded"
         aria-label="Go to homepage"
       >
-        JudgeMatrix
+        [JudgeMatrix]
       </Link>
 
       {/* Right: Controls */}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { Code2, BookOpenCheck, Sparkles } from "lucide-react";
 
 const HomePage = () => {
   const { user, loading } = useAuth();
@@ -18,66 +19,68 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0F4F8] to-[#DCECF9] text-gray-900
+    <div className="min-h-screen bg-gradient-to-br from-[#EBF8FF] to-[#D6EFFF] text-gray-900
                     dark:bg-gradient-to-br dark:from-[#1A202C] dark:to-[#2D3748] dark:text-gray-200">
 
       {/* Header */}
-      <div className="px-6 py-10 max-w-7xl mx-auto text-center">
-        <h1 className="text-4xl font-extrabold mb-3 tracking-tight text-blue-500 dark:text-gray-100">
+      <header className="text-center py-12 px-6">
+        <h1 className="text-5xl font-extrabold text-[#2B6CB0] dark:text-white tracking-tight flex justify-center items-center gap-2">
+          <Sparkles className="w-8 h-8 text-[#3182CE]" />
           Judge Matrix
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          {/* Optional subtitle or keep empty */}
+        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Your all-in-one platform to code, compile, and challenge yourself with real-world problems.
         </p>
-      </div>
+      </header>
 
       {/* Cards */}
-      <div className="max-w-6xl mx-auto px-4 py-10 grid gap-10 md:grid-cols-2">
-        
+      <main className="max-w-6xl mx-auto px-6 py-10 grid gap-10 md:grid-cols-2">
+
         {/* Compiler Card */}
-        <div className="rounded-3xl shadow-lg border border-[#D0E6F7] p-8 hover:shadow-2xl transition-transform transform hover:-translate-y-1
-                        bg-[#E0F2FF] dark:bg-[#2D3748] text-[#1A202C] dark:text-gray-200">
-          <h2 className="text-2xl font-bold mb-3">🔧 Online Compiler</h2>
-          <p className="text-gray-700 mb-6 dark:text-gray-300">
-            Run code instantly without logging in.
+        <div className="rounded-3xl shadow-xl border border-transparent p-8 transition-transform hover:-translate-y-1 hover:shadow-2xl
+                        bg-gradient-to-tr from-[#90CDF4] via-[#63B3ED] to-[#4299E1] text-white dark:from-[#2A4365] dark:via-[#2C5282] dark:to-[#2B6CB0]">
+          <div className="flex items-center gap-3 mb-4">
+            <Code2 className="w-6 h-6 text-white" />
+            <h2 className="text-3xl font-bold">Online Code Compiler</h2>
+          </div>
+          <p className="text-white/90 mb-6">
+            Write, test, and run your code instantly 
           </p>
           <Link to="/compiler">
-            <button className="px-6 py-2 rounded-lg text-sm font-semibold transition duration-300 ease-in-out
-                               bg-[#319795] hover:bg-[#2C7A7B] text-white
-                               dark:bg-[#38B2AC] dark:hover:bg-[#2C7A7B]">
-              Try Compiler
+            <button className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#2B6CB0] hover:bg-gray-200 transition">
+              Launch Compiler
             </button>
           </Link>
         </div>
 
         {/* Problems Card */}
-        <div className="rounded-3xl shadow-lg border border-[#D0E6F7] p-8 hover:shadow-2xl transition-transform transform hover:-translate-y-1
-                        bg-[#E0F2FF] dark:bg-[#2D3748] text-[#1A202C] dark:text-gray-200">
-          <h2 className="text-2xl font-bold mb-3">📚 Solve Coding Problems</h2>
-          <p className="text-gray-700 mb-6 dark:text-gray-300">
-            Challenge yourself with real-world problems. Track progress and submit solutions.
+        <div className="rounded-3xl shadow-xl border border-transparent p-8 transition-transform hover:-translate-y-1 hover:shadow-2xl
+                        bg-gradient-to-tr from-[#68D391] via-[#48BB78] to-[#38A169] text-white dark:from-[#22543D] dark:via-[#276749] dark:to-[#2F855A]">
+          <div className="flex items-center gap-3 mb-4">
+            <BookOpenCheck className="w-6 h-6 text-white" />
+            <h2 className="text-3xl font-bold">Solve Coding Challenges</h2>
+          </div>
+          <p className="text-white/90 mb-6">
+            Solve curated problems, sharpen your skills, and track your progress.
           </p>
           {isLoggedIn ? (
             <Link to="/problems">
-              <button className="px-6 py-2 rounded-lg text-sm font-semibold transition duration-300 ease-in-out
-                                 bg-[#319795] hover:bg-[#2C7A7B] text-white
-                                 dark:bg-[#38B2AC] dark:hover:bg-[#2C7A7B]">
-                Go to Problems
+              <button className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#2F855A] hover:bg-gray-200 transition">
+                Explore Problems
               </button>
             </Link>
           ) : (
             <button
               onClick={handleGoToProblemsClick}
-              className="px-6 py-2 rounded-lg text-sm font-semibold transition duration-300 ease-in-out
-                         bg-[#718096] hover:bg-[#4A5568] text-white
-                         dark:bg-[#4A5568] dark:hover:bg-[#2D3748]"
+              className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#4A5568] hover:bg-gray-200 transition"
               title="You must be logged in to access problems"
             >
               Login to Solve Problems
             </button>
           )}
         </div>
-      </div>
+
+      </main>
     </div>
   );
 };
