@@ -17,5 +17,5 @@ RUN mkdir -p /app/execute/outputs
 
 EXPOSE 5000
 
-CMD ["node", "index.js"]
+CMD ["node", "server.js"]
 
