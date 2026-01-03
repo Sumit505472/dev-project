@@ -126,7 +126,7 @@ const ProblemDetail = () => {
         setShowAireview(false); // Hide AI review when running/submitting
         setShowConsole(true); // Ensure console is visible when running
         try {
-            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, { code, language, input });
+            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/run`, { code, language, input });
             if (data.error) {
                 setOutput(data.error);
                 setVerdict("Execution Error"); // Changed from "Runtime Error" for clarity
@@ -152,7 +152,7 @@ const ProblemDetail = () => {
         setShowConsole(true); // Ensure console is visible when running/submitting
 
         try {
-            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/submit`, { code, language, problemId: id }, { withCredentials: true });
+            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/submission`, { code, language, problemId: id }, { withCredentials: true });
             
             // Assuming data contains { success, verdict, results }
             if (data.success) {

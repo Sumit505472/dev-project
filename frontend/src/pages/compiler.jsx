@@ -44,7 +44,10 @@ function Compiler() {
         input,
       };
   
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/run`, payload);
+      const res = await axios.post(
+  `${import.meta.env.VITE_BACKEND_URL}/api/run`,
+  payload
+);
   
       if (res.data.error || res.data.stderr) {
         setOutput("");

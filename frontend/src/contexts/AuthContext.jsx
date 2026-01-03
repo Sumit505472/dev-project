@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   
   const fetchUser = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/me`, {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/me`, {
         withCredentials: true,
       });
 
@@ -32,10 +32,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // to Clear cookie on logout (client-side only)
-  const logout = () => {
-    
+  const logout = async () => {
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
+      {},
+      { withCredentials: true }
+    );
+  } catch (err) {
+    console.error("Logout error:", err);
+  } finally {
     setUser(null);
-  };
+  }
+};
+
   
 
   return (

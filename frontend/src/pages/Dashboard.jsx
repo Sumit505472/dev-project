@@ -15,9 +15,12 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       axios
-        .get(`${import.meta.env.VITE_BACKEND_URL}/submissions/user/${user._id}`, {
-          withCredentials: true,
-        })
+     .get(
+    `${import.meta.env.VITE_BACKEND_URL}/api/submission/user/${user._id}`,
+    {
+      withCredentials: true,
+    }
+  )
         .then((res) => setSubmissions(res.data.submissions))
         .catch((err) => console.error(err));
     }

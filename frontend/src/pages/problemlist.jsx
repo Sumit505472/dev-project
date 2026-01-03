@@ -10,7 +10,7 @@ const ProblemList = () => {
         setLoading(true);
         setError(null);
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/problem`)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/problems`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
