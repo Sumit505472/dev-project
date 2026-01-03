@@ -1,22 +1,15 @@
-import fs from "fs/promises"; // Use fs.promises for async operations
+import fs from "fs/promises"; 
 import path from "path";
 import { fileURLToPath } from "url";
-import { exec } from "child_process"; // Keeping 'exec' as per your existing code
+import { exec } from "child_process"; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Define a default timeout for all code executions in milliseconds.
-// This is crucial for handling infinite loops or very long-running code.
-const DEFAULT_TIMEOUT_MS = 5000; // Example: 5 seconds. Adjust as per your judge's requirements.
 
-// Path for the outputs directory.
-// *** IMPORTANT: This needs to be a valid, writable path on your LOCALHOST Windows machine. ***
-// If generatefile.js and cleanupFiles.js use relative paths like 'tmp/execute/outputs',
-// then this outputPath should match that structure if this module is creating it,
-// or it should be passed in from index.js if generatefile.js handles all directory creation.
-// For consistency, it's best if generatefile.js creates and passes ALL paths.
-// However, this initial directory check is good practice if this module might be responsible for it.
+const DEFAULT_TIMEOUT_MS = 5000; 
+
+
 const outputPathDir = path.join(__dirname, "..", "tmp", "execute", "outputs"); // Adjust this to match your generatefile.js BASE_DIRS for outputs
 
 // Self-executing async function to ensure the output directory exists on module load.
