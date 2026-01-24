@@ -1,21 +1,26 @@
-FROM node:24-alpine
+FROM node:20-bullseye
+
+# Install compilers & runtimes
+RUN apt-get update && apt-get install -y \
+    g++ \
+    gcc \
+    openjdk-17-jdk \
+    python3 \
+    python-is-python3 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install compilers and dependencies
-RUN apk update && apk add --no-cache g++ openjdk11 python3 gcc
-
-COPY . .
-
+# Install dependencies first (better caching)
+COPY package*.json ./
 RUN npm install
 
-# Create essential directories for code, input, and output files
-# These are necessary for the application to write temporary files.
-RUN mkdir -p /app/codes
-RUN mkdir -p /app/inputs
-RUN mkdir -p /app/execute/outputs
+# Copy application source
+COPY . .
+
+# Create runtime directories (safe even if code also creates them)
+RUN mkdir -p codes inputs execute/outputs
 
 EXPOSE 5000
 
-CMD ["node", "server.js"]
-
+CMD ["npm", "run", "start"]
