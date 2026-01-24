@@ -37,7 +37,12 @@ export default function AddProblemForm() {
         tags: formData.tags.split(',').map(tag => tag.trim()), // ✅ convert tags to array
       };
     // Call API to submit formDataA
-        axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/problems/add`, formData)
+        axios.post(
+  `${import.meta.env.VITE_BACKEND_URL}/api/problems/add`,
+  processedData,
+  { withCredentials: true }
+)
+
       .then(response => {
         console.log('Problem added successfully:', response.data);
       })

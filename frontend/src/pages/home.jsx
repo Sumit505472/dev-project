@@ -26,7 +26,7 @@ const HomePage = () => {
       <header className="text-center py-12 px-6">
         <h1 className="text-5xl font-extrabold text-[#2B6CB0] dark:text-white tracking-tight flex justify-center items-center gap-2">
           <Sparkles className="w-8 h-8 text-[#3182CE]" />
-          Judge Matrix
+          OnlineJudge
         </h1>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           Your all-in-one platform to code, compile, and challenge yourself with real-world problems.
