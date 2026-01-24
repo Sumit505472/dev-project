@@ -42,7 +42,7 @@ const ProblemDetail = () => {
     useEffect(() => {
         const fetchProblem = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/problem/${id}`);
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/problems/${id}`);
                 setProblem(res.data.problem || res.data);
             } catch (error) {
                 console.error("Error fetching the problem:", error);

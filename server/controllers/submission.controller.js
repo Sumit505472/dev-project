@@ -14,6 +14,8 @@ import executeC from "../services/codeExecution/executec.js";
 import executeJava from "../services/codeExecution/executejava.js";
 import executePython from "../services/codeExecution/executepython.js";
 
+import { PATHS } from "../config/path.js";
+
 export const submitCode = async (req, res) => {
   const { code, language, problemId } = req.body;
 
@@ -24,17 +26,19 @@ export const submitCode = async (req, res) => {
     });
   }
 
-  let fileDetailsForCleanup = {};
+  let baseCleanupInfo = null;
 
   try {
     const {
       sourceFilePath,
-      language: jobLanguage,
-      jobId,
       sourceFilename,
+      language: jobLanguage,
     } = generateFile(language, code, null);
 
-    fileDetailsForCleanup = { jobId, sourceFilename, language: jobLanguage };
+    baseCleanupInfo = {
+      language: jobLanguage,
+      sourceFilename,
+    };
 
     const problem = await Problem.findById(problemId);
     if (!problem) {
@@ -51,21 +55,14 @@ export const submitCode = async (req, res) => {
 
     for (const testCase of testCases) {
       const testInputId = uuid();
-      const inputFilename = `${jobId}_${testInputId}.txt`;
-      const inputFilePath = path.join("/app", "inputs", inputFilename);
+
+      const inputFilename = `${testInputId}.txt`;
+      const outputFilename = `${testInputId}.out`;
+
+      const inputFilePath = path.join(PATHS.inputs, inputFilename);
+      const outputFilePath = path.join(PATHS.outputs, outputFilename);
 
       await fs.writeFile(inputFilePath, testCase.input);
-
-      const outputFilename = `${jobId}_${testInputId}.out`;
-      const outputFilePath = path.join(
-        "/app",
-        "execute",
-        "outputs",
-        outputFilename
-      );
-
-      fileDetailsForCleanup.inputFilename = inputFilename;
-      fileDetailsForCleanup.outputFilename = outputFilename;
 
       let actualOutput = "";
       let executionError = null;
@@ -106,9 +103,11 @@ export const submitCode = async (req, res) => {
       } catch (err) {
         executionError = err;
         allPassed = false;
-      } finally {
-        await fs.unlink(inputFilePath).catch(() => {});
       }
+
+      // cleanup testcase files immediately
+      await fs.unlink(inputFilePath).catch(() => {});
+      await fs.unlink(outputFilePath).catch(() => {});
 
       if (executionError) {
         results.push({
@@ -116,11 +115,11 @@ export const submitCode = async (req, res) => {
           expected: testCase.output.trim(),
           actual: "Execution Error",
           passed: false,
-          error: executionError.message,
         });
       } else {
         const passed =
           actualOutput.trim() === testCase.output.trim();
+
         if (!passed) allPassed = false;
 
         results.push({
@@ -153,7 +152,9 @@ export const submitCode = async (req, res) => {
       error: "Internal server error",
     });
   } finally {
-    await cleanupFiles(fileDetailsForCleanup);
+    if (baseCleanupInfo?.sourceFilename) {
+      await cleanupFiles(baseCleanupInfo);
+    }
   }
 };
 
@@ -177,4 +178,3 @@ export const getUserSubmissions = async (req, res) => {
     });
   }
 };
-

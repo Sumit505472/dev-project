@@ -1,62 +1,51 @@
-    import {fileURLToPath} from "url";
-    import fs from "fs"; // Using fs for synchronous operations like writeFileSync
-    import path from "path";
-    import {v4 as uuid} from "uuid";
+import fs from "fs";
+import path from "path";
+import { v4 as uuid } from "uuid";
+import { PATHS } from "../../config/path.js";
 
-    const __filename=fileURLToPath(import.meta.url);
-    const __dirname=path.dirname(__filename);
+// ensure required directories exist
+[PATHS.codes, PATHS.inputs, PATHS.outputs].forEach((dir) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
-    // Define base directories (these must match your Dockerfile mkdir -p commands)
-    // Using absolute paths within the Docker container WORKDIR /app
-    const dirCodes = path.join("/app", "codes"); 
-    const dirInputs = path.join("/app", "inputs"); 
-    const dirOutputs = path.join("/app", "execute", "outputs"); 
+const generateFile = (language, code, input) => {
+  const jobId = uuid();
 
-    // Function to generate file path and write code/input
-    const generateFile = (language, code, input) => {
-        const jobId = uuid(); // Unique ID for each code execution job
-        
-        const file_extension = {
-            cpp: "cpp",
-            c: "c",
-            python: "py",
-            java: "java",
-        }[language];
+  const extMap = {
+    cpp: "cpp",
+    c: "c",
+    python: "py",
+    java: "java",
+  };
 
-        let sourceFilename;
-        // All output files will use jobId.out. This is constructed in index.js for final path.
-        let outputFilename = `${jobId}.out`; 
+  const sourceFilename =
+    language === "java" ? "Main.java" : `${jobId}.${extMap[language]}`;
 
-        // Determine source filename based on language
-        if (language === "java") {
-            sourceFilename = `Main.java`; // Java source must be Main.java
-        } else {
-            sourceFilename = `${jobId}.${file_extension}`; // Other languages use jobId.ext
-        }
-        
-        // Construct full path for source file
-        const sourceFilePath = path.join(dirCodes, sourceFilename); 
-        fs.writeFileSync(sourceFilePath, code); // Write the provided code to the file
-        
-        let inputFilePath = null;
-        if (input !== undefined && input !== null && input.trim() !== '') { // Only create input file if input is provided
-            const inputFilename = `${jobId}.txt`; // Input files also use jobId.txt
-            inputFilePath = path.join(dirInputs, inputFilename);
-            fs.writeFileSync(inputFilePath, input); // Write input to file
-        }
+  const sourceFilePath = path.join(PATHS.codes, sourceFilename);
+  fs.writeFileSync(sourceFilePath, code);
 
-        // Return all necessary paths and IDs for execution and cleanup
-        return { 
-            sourceFilePath, 
-            inputFilePath, 
-            outputFilePath: path.join(dirOutputs, outputFilename), // Full path for output
-            language, 
-            jobId,
-            sourceFilename, // For cleanup reference
-            inputFilename: input ? `${jobId}.txt` : null, // For cleanup reference (if input was provided)
-            outputFilename // For cleanup reference
-        }; 
-    };
+  let inputFilename = null;
+  let inputFilePath = null;
 
-    export default generateFile;
-    
+  if (typeof input === "string" && input.trim() !== "") {
+    inputFilename = `${jobId}.txt`;
+    inputFilePath = path.join(PATHS.inputs, inputFilename);
+    fs.writeFileSync(inputFilePath, input);
+  }
+
+  const outputFilename = `${jobId}.out`;
+  const outputFilePath = path.join(PATHS.outputs, outputFilename);
+
+  return {
+    jobId,
+    language,
+    sourceFilename,
+    sourceFilePath,
+    inputFilename,
+    inputFilePath,
+    outputFilename,
+    outputFilePath,
+  };
+};
+
+export default generateFile;

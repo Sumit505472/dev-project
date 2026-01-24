@@ -16,7 +16,7 @@ export const runCode = async (req, res) => {
     });
   }
 
-  let fileDetailsForCleanup = {};
+  let fileDetailsForCleanup = null;
 
   try {
     const {
@@ -24,7 +24,6 @@ export const runCode = async (req, res) => {
       inputFilePath,
       outputFilePath,
       language: jobLanguage,
-      jobId,
       sourceFilename,
       inputFilename,
       outputFilename,
@@ -32,7 +31,6 @@ export const runCode = async (req, res) => {
 
     fileDetailsForCleanup = {
       language: jobLanguage,
-      jobId,
       sourceFilename,
       inputFilename,
       outputFilename,
@@ -41,67 +39,42 @@ export const runCode = async (req, res) => {
     let output;
     switch (jobLanguage) {
       case "cpp":
-        output = await executeCpp(
-          sourceFilePath,
-          inputFilePath,
-          outputFilePath
-        );
+        output = await executeCpp(sourceFilePath, inputFilePath, outputFilePath);
         break;
       case "c":
-        output = await executeC(
-          sourceFilePath,
-          inputFilePath,
-          outputFilePath
-        );
+        output = await executeC(sourceFilePath, inputFilePath, outputFilePath);
         break;
       case "java":
-        output = await executeJava(
-          sourceFilePath,
-          inputFilePath,
-          outputFilePath
-        );
+        output = await executeJava(sourceFilePath, inputFilePath, outputFilePath);
         break;
       case "python":
-        output = await executePython(
-          sourceFilePath,
-          inputFilePath,
-          outputFilePath
-        );
+        output = await executePython(sourceFilePath, inputFilePath, outputFilePath);
         break;
       default:
-        return res
-          .status(400)
-          .json({ success: false, error: "Unsupported language" });
+        return res.status(400).json({
+          success: false,
+          error: "Unsupported language",
+        });
     }
 
     return res.json({ success: true, output });
   } catch (err) {
     console.error("Error in running code:", err);
 
-    let errorMessage = "An unknown error occurred during execution.";
-    let statusCode = 500;
+    let errorMessage = "Execution failed.";
 
-    if (typeof err === "object" && err !== null) {
-      if (err.error) {
-        errorMessage = err.error;
-        statusCode = 400;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
+    if (err?.error) errorMessage = err.error;
+    else if (err?.details) errorMessage = err.details;
+    else if (err?.message) errorMessage = err.message;
 
-      if (err.stderr?.trim()) {
-        errorMessage += `\nStderr: ${err.stderr.trim()}`;
-      }
-      if (err.stdout?.trim()) {
-        errorMessage += `\nStdout: ${err.stdout.trim()}`;
-      }
-    }
-
-    return res.status(statusCode).json({
+    // IMPORTANT: return 200 so frontend treats it as judge result
+    return res.json({
       success: false,
       error: errorMessage,
     });
   } finally {
-    await cleanupFiles(fileDetailsForCleanup);
+    if (fileDetailsForCleanup?.sourceFilename) {
+      await cleanupFiles(fileDetailsForCleanup);
+    }
   }
 };
