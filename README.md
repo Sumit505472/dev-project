@@ -267,7 +267,7 @@ Here's a quick overview of your backend's main API endpoints:
 
 If you have any questions, suggestions, or issues, feel free to reach out to me:
 
-* **Your Name:** Sumit Kumar Pathak
+*  Sumit Kumar Pathak
 
 * **Email:** pathaksumit505@gmail.com
 
