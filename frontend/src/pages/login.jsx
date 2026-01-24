@@ -14,9 +14,7 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    localStorage.removeItem("token");
-  }, []);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
