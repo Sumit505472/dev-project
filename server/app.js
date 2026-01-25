@@ -17,7 +17,8 @@ import aiRoutes from "./routes/ai.routes.js";
 
 const app = express();
 
-// DB
+
+app.set("trust proxy", 1);
 DBConnection();
 
 // middleware
@@ -30,6 +31,8 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send("Online Judge Server is running.");
 });
+
+
 
 // routes
 app.use("/api/auth", authRoutes);
