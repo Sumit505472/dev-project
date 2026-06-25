@@ -1,4 +1,4 @@
-# 👨‍💻 Judge Matrix 🚀
+# 👨‍💻 CodeEdge 
 
 ## 🌟 Introduction
 
