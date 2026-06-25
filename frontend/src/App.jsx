@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react'; // Import useState and useEffect
 import HomePage from './pages/home';
 import ProblemList from './pages/problemlist';
@@ -8,12 +8,36 @@ import AddProblemForm from './components/addproblem';
 import Compiler from './pages/compiler';
 import Header from './components/header';
 import Dashboard from './pages/Dashboard';
+import { useAuth } from './contexts/AuthContext';
+import AdminProblems from './pages/AdminProblems';
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="p-6 text-center text-gray-600 dark:text-gray-300">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'admin') {
+    return (
+      <div className="p-6 text-center text-red-600 dark:text-red-300">
+        403 Forbidden: Admin access required.
+      </div>
+    );
+  }
+
+  return children;
+};
 
 function App() {
-  // Initialize theme state: try to get it from localStorage, or default to 'light'
+
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
-  // Use useEffect to apply the theme to the <html> tag whenever 'theme' changes
+ 
   useEffect(() => {
     // Set the data-theme attribute for DaisyUI
     document.documentElement.setAttribute('data-theme', theme);
@@ -29,18 +53,17 @@ function App() {
     localStorage.setItem('theme', theme);
   }, [theme]); // Re-run this effect whenever the 'theme' state changes
 
-  // Function to toggle the theme between 'light' and 'dark'
+ 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
   return (
-    // The classes here (bg-base-100, text-base-content) will now correctly
-    // pick up the theme applied to <html> via data-theme
+ 
     <div className="min-h-screen bg-base-100 text-base-content transition-colors ">
       <Router>
         <Header toggleTheme={toggleTheme} currentTheme={theme} />
-        {/* Pass the toggleTheme function and current theme down to Header */}
+       
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -48,7 +71,10 @@ function App() {
           <Route path="/problems" element={<ProblemList />} />
           <Route path="/problem/:id" element={<ProblemDetail />} />
           <Route path="/compiler" element={<Compiler />} />
-          <Route path="/addproblem" element={<AddProblemForm />} />
+          <Route path="/admin" element={<AdminRoute><AdminProblems /></AdminRoute>} />
+          <Route path="/admin/add-problem" element={<AdminRoute><AddProblemForm /></AdminRoute>} />
+          <Route path="/admin/problems/:id/edit" element={<AdminRoute><AddProblemForm /></AdminRoute>} />
+          <Route path="/addproblem" element={<Navigate to="/admin/add-problem" replace />} />
           <Route path="/*" element={<h1>404 Not Found</h1>} />
         </Routes>
       </Router>

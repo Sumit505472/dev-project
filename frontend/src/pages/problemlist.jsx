@@ -34,7 +34,7 @@ const ProblemList = () => {
             });
     }, []);
 
-    // Helper function for difficulty classes (reusable and adapts to dark mode)
+   
     const getDifficultyClass = (difficulty) => {
         switch (difficulty?.toLowerCase()) {
             case 'easy': return 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100';
@@ -95,10 +95,10 @@ const ProblemList = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {problems.map((p) => (
+                        {problems.map((p, index) => (
                             <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                    {p.question_number}
+                                    {p.question_number || index + 1}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <Link to={`/problem/${p._id}`} className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">

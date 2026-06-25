@@ -3,19 +3,43 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import Editor from "@monaco-editor/react";
 import Aireview from "../components/aiReviewPanel";
+import { useAuth } from "../contexts/AuthContext";
+
+const codeTemplates = {
+    cpp: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // Write your solution here
+    return 0;
+}`,
+    c: `#include <stdio.h>
+
+int main() {
+    // Write your solution here
+    return 0;
+}`,
+    python: `# Write your solution here`,
+};
 
 const ProblemDetail = () => {
     const { id } = useParams();
+    const { user, loading: authLoading } = useAuth();
     const [problem, setProblem] = useState(null);
-    const [code, setCode] = useState("// Write your solution here");
+    const [code, setCode] = useState(codeTemplates.cpp);
     const [language, setLanguage] = useState("cpp");
+    const [saveStatus, setSaveStatus] = useState("");
+    const [isDraftLoading, setIsDraftLoading] = useState(false);
     const [verdict, setVerdict] = useState(""); // For general verdict display
     const [input, setInput] = useState("");
     const [output, setOutput] = useState(""); // For run output
     const [submissionDetails, setSubmissionDetails] = useState(null); // To store full submission results
     const [fullscreen, setFullscreen] = useState(false);
     
-    // Controls visibility of the entire bottom console section.
+    
     const [showConsole, setShowConsole] = useState(true); 
 
     // State for AI Review panel maximization
@@ -31,6 +55,8 @@ const ProblemDetail = () => {
     const containerRef = useRef(null);
     const isResizingVertical = useRef(false);
     const isResizingHorizontal = useRef(false);
+    const lastSavedCodeRef = useRef(codeTemplates.cpp);
+    const draftLoadKeyRef = useRef("");
 
     // Function to get the current theme from the HTML data-theme attribute
     // This allows Monaco to react to the theme change
@@ -114,6 +140,89 @@ const ProblemDetail = () => {
         cpp: "cpp",
         python: "python",
         c: "c",
+    };
+
+    useEffect(() => {
+        if (authLoading || !id) return;
+
+        const loadDraft = async () => {
+            const loadKey = `${id}:${language}`;
+            draftLoadKeyRef.current = loadKey;
+            setIsDraftLoading(true);
+            setSaveStatus(user ? "Loading draft..." : "");
+
+            if (!user) {
+                const template = codeTemplates[language] || "";
+                setCode(template);
+                lastSavedCodeRef.current = template;
+                setIsDraftLoading(false);
+                setSaveStatus("");
+                return;
+            }
+
+            try {
+                const { data } = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/drafts/${id}/${language}`,
+                    { withCredentials: true }
+                );
+
+                if (draftLoadKeyRef.current !== loadKey) return;
+
+                const restoredCode = data.code || codeTemplates[language] || "";
+                setCode(restoredCode);
+                lastSavedCodeRef.current = restoredCode;
+                setSaveStatus(data.code ? "Saved" : "");
+            } catch (error) {
+                if (draftLoadKeyRef.current !== loadKey) return;
+
+                const template = codeTemplates[language] || "";
+                setCode(template);
+                lastSavedCodeRef.current = template;
+                setSaveStatus("Failed to Load Draft");
+                console.error("Error loading draft:", error);
+            } finally {
+                if (draftLoadKeyRef.current === loadKey) {
+                    setIsDraftLoading(false);
+                }
+            }
+        };
+
+        loadDraft();
+    }, [authLoading, id, language, user]);
+
+    useEffect(() => {
+        if (authLoading || !user || !id || isDraftLoading) return;
+        if (code === lastSavedCodeRef.current) return;
+
+        setSaveStatus("Saving...");
+
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                await axios.post(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/drafts/save`,
+                    { problemId: id, language, code },
+                    { withCredentials: true }
+                );
+                lastSavedCodeRef.current = code;
+                setSaveStatus("Saved");
+            } catch (error) {
+                setSaveStatus("Failed to Save");
+                console.error("Error saving draft:", error);
+            }
+        }, 3000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [authLoading, code, id, isDraftLoading, language, user]);
+
+    const handleLanguageChange = (nextLanguage) => {
+        setLanguage(nextLanguage);
+        setVerdict("");
+        setOutput("");
+        setSubmissionDetails(null);
+    };
+
+    const handleCodeChange = (value) => {
+        setCode(value ?? "");
     };
 
     const toggleFullscreen = () => setFullscreen(!fullscreen);
@@ -230,20 +339,29 @@ const ProblemDetail = () => {
                         </div>
 
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Sample Cases</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Examples</h3>
                             <div className="space-y-4">
-                                {problem.test_cases && problem.test_cases.length > 0 && (
-                                    <>
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Sample Input</h4>
-                                            <pre className="text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 p-2 rounded">{problem.test_cases[0].input}</pre>
+                                {(problem.examples?.length ? problem.examples : problem.test_cases || []).map((example, index) => (
+                                    <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Example {index + 1}</h4>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-300 mb-1">Input</p>
+                                                <pre className="text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 p-2 rounded whitespace-pre-wrap">{example.input}</pre>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-300 mb-1">Output</p>
+                                                <pre className="text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 p-2 rounded whitespace-pre-wrap">{example.output}</pre>
+                                            </div>
+                                            {example.explanation && (
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-300 mb-1">Explanation</p>
+                                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{example.explanation}</p>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Sample Output</h4>
-                                            <pre className="text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 p-2 rounded">{problem.test_cases[0].output}</pre>
-                                        </div>
-                                    </>
-                                )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -255,11 +373,11 @@ const ProblemDetail = () => {
                         <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                             <div>
                                 <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Time Limit</h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{problem.time_limit}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{problem.time_limit} sec</p>
                             </div>
                             <div>
                                 <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Memory Limit</h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{problem.memory_limit}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{problem.memory_limit} MB</p>
                             </div>
                         </div>
 
@@ -288,13 +406,26 @@ const ProblemDetail = () => {
                         <select 
                             id="language-select" 
                             value={language} 
-                            onChange={(e) => setLanguage(e.target.value)} 
+                            onChange={(e) => handleLanguageChange(e.target.value)} 
                             className="p-1 border rounded text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="cpp">C++</option>
                             <option value="python">Python</option>
                             <option value="c">C</option>
                         </select>
+                        {saveStatus && (
+                            <span
+                                className={`text-xs font-semibold ${
+                                    saveStatus === "Saved"
+                                        ? "text-green-600 dark:text-green-400"
+                                        : saveStatus === "Saving..." || saveStatus === "Loading draft..."
+                                            ? "text-gray-500 dark:text-gray-400"
+                                            : "text-red-600 dark:text-red-400"
+                                }`}
+                            >
+                                {saveStatus}
+                            </span>
+                        )}
                     </div>
                     <button onClick={toggleFullscreen} title={fullscreen ? "Minimize" : "Maximize"} className="px-2 py-1 text-lg font-bold bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100">
                         {fullscreen ? "🗕" : "🗖"} {/* Maximize/Minimize button for editor */}
@@ -308,7 +439,7 @@ const ProblemDetail = () => {
                         language={monacoLanguageMap[language]} 
                         theme={monacoTheme} // Use the dynamic theme here
                         value={code} 
-                        onChange={(val) => setCode(val)} 
+                        onChange={handleCodeChange} 
                         options={{ 
                             fontSize: 16, 
                             minimap: { enabled: false }, 

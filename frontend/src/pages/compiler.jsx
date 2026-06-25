@@ -86,17 +86,17 @@ function Compiler() {
 
   return (
    
-    <div className="min-h-screen flex flex-col bg-purple-300">
+    <div className="min-h-screen flex flex-col bg-yellow-100">
       
-      {/* Main content wrapper: takes full width, grows vertically, has rounded corners */}
-      <div className="w-full max-w-6xl mx-auto flex flex-col flex-grow bg-white rounded-xl shadow-2xl overflow-hidden my-8"> {/* Added my-8 for vertical margin */}
+      
+      <div className="w-full max-w-7xl mx-auto flex flex-col flex-grow bg-white rounded-xl shadow-2xl overflow-hidden mt-8"> {/* Added my-8 for vertical margin */}
         
-        {/* === TOP BAR: Title, Language Selector, Run Button === */}
+       
         <div className="p-6 bg-gray-800 text-white flex flex-col md:flex-row items-center justify-between rounded-t-xl">
           <h1 className="text-3xl font-extrabold text-blue-300 mb-4 md:mb-0">Online Code Compiler</h1>
           
           <div className="flex items-center space-x-4">
-            {/* Language Selector */}
+           
             <div>
               <label htmlFor="language-select" className="sr-only">Language:</label> {/* sr-only for accessibility */}
               <select
@@ -107,12 +107,11 @@ function Compiler() {
               >
                 <option value="cpp">C++</option>
                 <option value="python">Python</option>
-                
                 <option value="c">C</option>
               </select>
             </div>
 
-            {/* Run Button */}
+            
             <button
               onClick={handleRunCode}
               className="bg-pink-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 text-lg"
@@ -123,13 +122,11 @@ function Compiler() {
           </div>
         </div>
 
-        {/* === MAIN CONTENT AREA: Code Editor (Left) & Input/Output (Right) === */}
-        {/* This div uses flex-grow to take up all remaining vertical space */}
-        <div className="flex flex-col md:flex-row flex-grow">
+       
+        <div className="flex flex-col md:flex-row flex-grow ">
           
-          {/* === LEFT PANEL: Code Editor (Covers full left size) === */}
-          {/* flex-grow on content here allows CodeEditor to fill available height */}
-          <div className="md:w-3/4 p-6 flex flex-col border-r border-gray-200 bg-white">
+         
+          <div className="md:w-3/4 p-4 flex flex-col border-r border-gray-200 bg-white">
             <div className="flex-grow"> {/* This div ensures CodeEditor takes all vertical space */}
               <CodeEditor language={language} code={code} setCode={setCode} />
             </div>

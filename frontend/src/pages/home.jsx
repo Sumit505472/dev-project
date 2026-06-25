@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Code2, BookOpenCheck, Sparkles } from "lucide-react";
-
+import { HeroSection } from "../components/HeroSection";
 const HomePage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -19,19 +19,10 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EBF8FF] to-[#D6EFFF] text-gray-900
-                    dark:bg-gradient-to-br dark:from-[#1A202C] dark:to-[#2D3748] dark:text-gray-200">
+    <div className="min-h-screen ">
 
-      {/* Header */}
-      <header className="text-center py-12 px-6">
-        <h1 className="text-5xl font-extrabold text-[#2B6CB0] dark:text-white tracking-tight flex justify-center items-center gap-2">
-          <Sparkles className="w-8 h-8 text-[#3182CE]" />
-          CodeEdge
-        </h1>
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Your all-in-one platform to code, compile, and challenge yourself with real-world problems.
-        </p>
-      </header>
+      <HeroSection isLoggedIn={isLoggedIn} />
+      
 
       {/* Cards */}
       <main className="max-w-6xl mx-auto px-6 py-10 grid gap-10 md:grid-cols-2">
