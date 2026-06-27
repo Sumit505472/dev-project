@@ -48,7 +48,20 @@ export const submitCode = async (req, res) => {
       });
     }
 
-    const testCases = await Testcase.find({ problemId });
+    let testCases = problem.hidden_test_cases?.length
+      ? problem.hidden_test_cases
+      : [];
+
+    if (testCases.length === 0) {
+      testCases = await Testcase.find({ problemId });
+    }
+
+    if (testCases.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No test cases configured for this problem",
+      });
+    }
 
     let allPassed = true;
     const results = [];

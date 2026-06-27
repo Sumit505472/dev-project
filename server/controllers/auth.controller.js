@@ -44,6 +44,12 @@ export const register = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "You have successfully registered",
+      user: {
+        _id: newUser._id,
+        fullname: newUser.fullname,
+        email: newUser.email,
+        role: newUser.role,
+      },
     });
   } catch (error) {
     console.error("Registration failed:", error);
@@ -90,6 +96,12 @@ export const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "You have successfully logged in!",
+      user: {
+        _id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error("Login failed:", error);

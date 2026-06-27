@@ -1,62 +1,95 @@
-// i will add problem once i build the basic online judge
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
-const testCaseSchema = new mongoose.Schema({
-    input: { type: String, required: true },
-    output: { type: String, required: true }
-  });
-  
- 
-const problemSchema=new mongoose.Schema({
+import mongoose from "mongoose";
 
-    title:{
-        type:String,
-        required:true,
-    },
-    difficulty:{
-    type:String,
-    required:true,
-    },
-    description:{
-        type:String,
-        required:true,
+const exampleSchema = new mongoose.Schema(
+  {
+    input: { type: String, required: true, trim: true },
+    output: { type: String, required: true, trim: true },
+    explanation: { type: String, trim: true, default: "" },
+  },
+  { _id: false }
+);
 
+const hiddenTestCaseSchema = new mongoose.Schema(
+  {
+    input: { type: String, required: true, trim: true },
+    output: { type: String, required: true, trim: true },
+  },
+  { _id: false }
+);
+
+const problemSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    question_number:{
-        type:Number,
-        required:true,
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      sparse: true,
+      index: true,
     },
-    input_format:{
-        type:String,
-        required:true,
+    difficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard"],
+      required: true,
     },
-    output_format:{
-        type:String,
-        required:true,
+    description: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    tags: [{
+    input_format: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    output_format: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    constraints: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    tags: [
+      {
         type: String,
-        required: true,
-      }],
-    constraints:{
-        type:String,
-        required:true,
+        trim: true,
+      },
+    ],
+    examples: {
+      type: [exampleSchema],
+      validate: {
+        validator: (examples) => examples.length > 0,
+        message: "At least one example is required",
+      },
     },
-    Note:{
-        type:String,  
+    hidden_test_cases: {
+      type: [hiddenTestCaseSchema],
+      validate: {
+        validator: (testCases) => testCases.length > 0,
+        message: "At least one hidden test case is required",
+      },
     },
-    test_cases:[testCaseSchema],
-    time_limit:{
-        type:Number,
-        required:true,
-        default:1
+    time_limit: {
+      type: Number,
+      default: 1,
+      min: 1,
     },
-    memory_limit:{
-        type:Number,
-        required:true,
-        default:256
-    }
- 
-});
-export default mongoose.model('Problem',problemSchema);
+    memory_limit: {
+      type: Number,
+      default: 256,
+      min: 1,
+    },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("Problem", problemSchema);

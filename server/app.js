@@ -14,6 +14,7 @@ import problemRoutes from "./routes/problem.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
 import runRoutes from "./routes/run.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import draftRoutes from "./routes/draft.routes.js";
 
 const app = express();
 
@@ -40,5 +41,6 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/submission", submissionRoutes);
 app.use("/api/run", runRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/drafts", draftRoutes);
 
 export default app;
