@@ -1,8 +1,8 @@
-# 👨‍💻 Judge Matrix 🚀
+# 👨‍💻 CodeEdge 
 
 ## 🌟 Introduction
 
-The Judge Matrix is a cutting-edge online coding platform designed for developers and students to practice their programming skills, execute code in multiple languages, and submit solutions against real-world coding challenges. It's a full-stack solution that combines a robust and scalable backend with a seamless user experience.
+The CodeEdge is a cutting-edge online coding platform designed for developers and students to practice their programming skills, execute code in multiple languages, and submit solutions against real-world coding challenges. It's a full-stack solution that combines a robust and scalable backend with a seamless user experience.
 
 This platform empowers you to:
 
