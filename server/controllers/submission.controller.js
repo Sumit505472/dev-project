@@ -41,6 +41,7 @@ export const submitCode = async (req, res) => {
       language,
       verdict,
       results,
+      status: "COMPLETED",
     });
 
     return res.status(200).json({

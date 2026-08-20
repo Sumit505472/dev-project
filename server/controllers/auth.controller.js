@@ -7,7 +7,7 @@ import User from "../models/user.js";
  */
 export const register = async (req, res) => {
   try {
-    const { fullname, email, password } = req.body;
+    const { fullname, email, password } = req.body;//object destructuring
 
     if (!fullname || !email || !password) {
       return res.status(400).json({ message: "Please fill all required fields" });
@@ -121,7 +121,7 @@ export const me = async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password");//select all fields except password
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

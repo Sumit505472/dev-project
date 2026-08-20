@@ -31,23 +31,32 @@ const processSubmissionJob = async (job) => {
     throw new Error(`Submission not found: ${submissionId}`);
   }
 
-  const {
-    sourceFilePath,
-    sourceFilename,
-    language: jobLanguage,
-  } = generateFile(submission.language, submission.code, null);
+  submission.status = "RUNNING";
+  await submission.save();
 
-  const cleanupInfo = {
-    language: jobLanguage,
-    sourceFilename,
-  };
-
+  let cleanupInfo = null;
   try {
+    const {
+      sourceFilePath,
+      sourceFilename,
+      language: jobLanguage,
+    } = generateFile(submission.language, submission.code, null);
+
+    cleanupInfo = {
+      language: jobLanguage,
+      sourceFilename,
+    };
+
     const result = await judgeSubmission({
       problemId: submission.problem,
       language: jobLanguage,
       sourceFilePath,
     });
+
+    submission.status = "COMPLETED";
+    submission.verdict = result.verdict;
+    submission.results = result.results;
+    await submission.save();
 
     console.log("Submission judged by worker:", {
       submissionId: submission._id.toString(),
@@ -58,8 +67,25 @@ const processSubmissionJob = async (job) => {
     });
 
     return result;
+  } catch (error) {
+    try {
+      submission.status = "FAILED";
+      await submission.save();
+    } catch (statusError) {
+      console.error("Failed to persist submission failure status:", {
+        submissionId,
+        error: statusError,
+      });
+    }
+    console.error("Submission worker processing error:", {
+      submissionId,
+      error,
+    });
+    throw error;
   } finally {
-    await cleanupFiles(cleanupInfo);
+    if (cleanupInfo) {
+      await cleanupFiles(cleanupInfo);
+    }
   }
 };
 
