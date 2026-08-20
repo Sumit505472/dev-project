@@ -50,6 +50,7 @@ const ProblemDetail = () => {
 
     const [isRunning, setIsRunning] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionStatus, setSubmissionStatus] = useState("");
     const [showAireview, setShowAireview] = useState(false);
 
     const containerRef = useRef(null);
@@ -57,9 +58,20 @@ const ProblemDetail = () => {
     const isResizingHorizontal = useRef(false);
     const lastSavedCodeRef = useRef(codeTemplates.cpp);
     const draftLoadKeyRef = useRef("");
+    const pollingTimeoutRef = useRef(null);
+    const pollingGenerationRef = useRef(0);
 
-    // Function to get the current theme from the HTML data-theme attribute
-    // This allows Monaco to react to the theme change
+    const stopSubmissionPolling = () => {
+        pollingGenerationRef.current += 1;
+        if (pollingTimeoutRef.current) {
+            window.clearTimeout(pollingTimeoutRef.current);
+            pollingTimeoutRef.current = null;
+        }
+    };
+
+    useEffect(() => () => stopSubmissionPolling(), []);
+
+    
     const getMonacoTheme = () => {
         return document.documentElement.getAttribute('data-theme') === 'dark' ? 'vs-dark' : 'vs-light';
     };
@@ -76,7 +88,7 @@ const ProblemDetail = () => {
         };
         fetchProblem();
 
-        // Add a MutationObserver to listen for changes on the 'html' element's 'data-theme' attribute
+       
         const observer = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -215,10 +227,12 @@ const ProblemDetail = () => {
     }, [authLoading, code, id, isDraftLoading, language, user]);
 
     const handleLanguageChange = (nextLanguage) => {
+        stopSubmissionPolling();
         setLanguage(nextLanguage);
         setVerdict("");
         setOutput("");
         setSubmissionDetails(null);
+        setSubmissionStatus("");
     };
 
     const handleCodeChange = (value) => {
@@ -228,6 +242,8 @@ const ProblemDetail = () => {
     const toggleFullscreen = () => setFullscreen(!fullscreen);
 
     const handleRun = async () => {
+        stopSubmissionPolling();
+        setSubmissionStatus("");
         setIsRunning(true);
         setVerdict(""); // Clear verdict
         setOutput(""); // Clear previous output
@@ -253,26 +269,74 @@ const ProblemDetail = () => {
     };
 
     const handleSubmit = async () => {
+        stopSubmissionPolling();
         setIsSubmitting(true);
         setVerdict(""); // Clear verdict
         setOutput(""); // Clear previous output (as detailed results will be shown)
         setSubmissionDetails(null); // Clear previous submission details
+        setSubmissionStatus("");
         setShowAireview(false); // Hide AI review when running/submitting
         setShowConsole(true); // Ensure console is visible when running/submitting
 
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/submission`, { code, language, problemId: id }, { withCredentials: true });
-            
-            // Assuming data contains { success, verdict, results }
-            if (data.success) {
-                setVerdict(data.verdict);
-                setSubmissionDetails(data); // Store the entire data object
-            } else {
-                // Handle cases where success is false but not a caught error
-                setVerdict("Submission Failed");
-                setOutput(data.error || "Unknown error occurred during submission.");
+
+            if (!data.success || !data.submissionId) {
+                throw new Error(data.error || "Submission was not queued.");
             }
+
+            setSubmissionStatus(data.status || "QUEUED");
+            const pollingGeneration = pollingGenerationRef.current;
+            const pollSubmission = async () => {
+                if (pollingGenerationRef.current !== pollingGeneration) return;
+
+                try {
+                    const { data: statusData } = await axios.get(
+                        `${import.meta.env.VITE_BACKEND_URL}/api/submission/${data.submissionId}`,
+                        { withCredentials: true }
+                    );
+
+                    if (pollingGenerationRef.current !== pollingGeneration) return;
+
+                    const submission = statusData.submission;
+                    const status = submission?.status;
+                    if (!submission || !["QUEUED", "RUNNING", "COMPLETED", "FAILED"].includes(status)) {
+                        throw new Error("Invalid submission status response.");
+                    }
+
+                    setSubmissionStatus(status);
+
+                    if (status === "COMPLETED" || status === "FAILED") {
+                        pollingTimeoutRef.current = null;
+                        setSubmissionDetails(submission);
+                        setIsSubmitting(false);
+
+                        if (status === "COMPLETED") {
+                            setVerdict(submission.verdict || "Submission Failed");
+                        } else {
+                            setVerdict("Submission Failed");
+                            setOutput("The submission could not be processed.");
+                        }
+                        return;
+                    }
+
+                    setVerdict(status === "QUEUED" ? "Queued..." : "Running...");
+                    pollingTimeoutRef.current = window.setTimeout(pollSubmission, 1000);
+                } catch (error) {
+                    if (pollingGenerationRef.current !== pollingGeneration) return;
+
+                    setIsSubmitting(false);
+                    setSubmissionStatus("FAILED");
+                    setVerdict("Submission Error");
+                    setOutput("Unable to retrieve submission status. Please try again.");
+                    console.error(error);
+                }
+            };
+
+            pollSubmission();
         } catch (error) {
+            setIsSubmitting(false);
+            setSubmissionStatus("FAILED");
             setVerdict("Submission Error");
             // Check if error.response exists and has data for more specific backend errors
             if (error.response && error.response.data && error.response.data.error) {
@@ -281,16 +345,16 @@ const ProblemDetail = () => {
                 setOutput("Error submitting code. Please try again.");
             }
             console.error(error);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     // Handler to clear submission results
     const handleClearResults = () => {
+        stopSubmissionPolling();
         setSubmissionDetails(null);
         setOutput("");
         setVerdict(""); // Reset verdict
+        setSubmissionStatus("");
     };
 
     // Handler to toggle AI Review panel size
@@ -475,6 +539,14 @@ const ProblemDetail = () => {
                     // Show Console (Input/Output/Results) if not fullscreen and showConsole is true
                     !fullscreen && showConsole && (
                         <div className="bg-gray-50 dark:bg-gray-800 p-4 space-y-4 flex-grow overflow-auto text-base-content dark:text-gray-200">
+                            {submissionStatus && (
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                    {submissionStatus === "QUEUED" && "Queued..."}
+                                    {submissionStatus === "RUNNING" && "Running..."}
+                                    {submissionStatus === "COMPLETED" && "Submission completed."}
+                                    {submissionStatus === "FAILED" && "Submission processing failed."}
+                                </div>
+                            )}
                             {/* Display simple output from /run OR custom input area */}
                             {!submissionDetails ? ( // Only show input/output if no submission details
                                 <>
@@ -535,7 +607,7 @@ const ProblemDetail = () => {
 
                 <div className="flex justify-between items-center space-x-4 p-3 border-t bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                     <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                        Verdict: <span className={verdict === "Accepted" ? "text-green-600 dark:text-green-400" : (verdict && verdict !== "Output Display" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400")}>{verdict || "Not Run"}</span>
+                        Verdict: <span className={verdict === "Accepted" ? "text-green-600 dark:text-green-400" : (verdict && verdict !== "Output Display" && verdict !== "Queued..." && verdict !== "Running..." ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400")}>{verdict || "Not Run"}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         {/* Clear Results Button - appears only when submissionDetails are present */}
