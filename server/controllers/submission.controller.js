@@ -1,8 +1,8 @@
 import Submission from "../models/submission.js";
-
-import generateFile from "../services/file/generateFile.js";
-import cleanupFiles from "../services/file/cleanupFiles.js";
-import judgeSubmission from "../services/submission/judgeSubmission.js";
+import {
+  SUBMISSION_JOB_NAME,
+  submissionQueue,
+} from "../queues/submissionQueue.js";
 
 export const submitCode = async (req, res) => {
   const { code, language, problemId } = req.body;
@@ -14,40 +14,37 @@ export const submitCode = async (req, res) => {
     });
   }
 
-  let baseCleanupInfo = null;
-
   try {
-    const {
-      sourceFilePath,
-      sourceFilename,
-      language: jobLanguage,
-    } = generateFile(language, code, null);
-
-    baseCleanupInfo = {
-      language: jobLanguage,
-      sourceFilename,
-    };
-
-    const { verdict, results } = await judgeSubmission({
-      problemId,
-      language: jobLanguage,
-      sourceFilePath,
-    });
-
     const submission = await Submission.create({
       user: req.user._id,
       problem: problemId,
       code,
       language,
-      verdict,
-      results,
-      status: "COMPLETED",
+      results: [],
+      status: "QUEUED",
     });
+
+    try {
+      await submissionQueue.add(SUBMISSION_JOB_NAME, {
+        submissionId: submission._id.toString(),
+      });
+    } catch (queueError) {
+      try {
+        submission.status = "FAILED";
+        await submission.save();
+      } catch (statusError) {
+        console.error("Failed to persist submission failure status:", {
+          submissionId: submission._id.toString(),
+          error: statusError,
+        });
+      }
+      throw queueError;
+    }
 
     return res.status(200).json({
       success: true,
-      verdict: submission.verdict,
-      results: submission.results,
+      submissionId: submission._id.toString(),
+      status: submission.status,
     });
   } catch (error) {
     if (error.statusCode) {
@@ -62,10 +59,6 @@ export const submitCode = async (req, res) => {
       success: false,
       error: "Internal server error",
     });
-  } finally {
-    if (baseCleanupInfo?.sourceFilename) {
-      await cleanupFiles(baseCleanupInfo);
-    }
   }
 };
 
