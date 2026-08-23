@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: ./server
+    container_name: codeedge-api
+    command: npm run start
+    ports:
+      - "5000:5000"
+    environment:
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - ./server/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./server
+    container_name: codeedge-worker
+    command: node workers/submissionWorker.js
+    environment:
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - ./server/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: codeedge-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  redis_data:
