@@ -1,269 +1,616 @@
-# 👨‍💻 CodeEdge 
+# CodeEdge
 
-## 🌟 Introduction
+A full-stack online judge and coding practice platform for running code, submitting solutions, managing problem sets, and tracking user progress with a React frontend, Express API, MongoDB data layer, and Redis-backed asynchronous judge workers.
 
-The CodeEdge is a cutting-edge online coding platform designed for developers and students to practice their programming skills, execute code in multiple languages, and submit solutions against real-world coding challenges. It's a full-stack solution that combines a robust and scalable backend with a seamless user experience.
+<p align="center">
+  <img alt="CodeEdge" src="https://img.shields.io/badge/CodeEdge-Online%20Judge-2563eb?style=for-the-badge" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react" />
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js" />
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb" />
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-BullMQ-DC382D?style=for-the-badge&logo=redis" />
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker" />
+</p>
 
-This platform empowers you to:
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Active%20Development-2ea44f" />
+  <img alt="Frontend" src="https://img.shields.io/badge/Frontend-Vite%20%2B%20React-4c8bf5" />
+  <img alt="Backend" src="https://img.shields.io/badge/Backend-Express.js-000000" />
+</p>
 
-* **Run code instantly** and see its output.
+## Project overview
 
-* **Submit solutions** for various programming problems.
+CodeEdge is an online coding platform where users can:
 
-* Get your code evaluated against **automated test cases**.
+- write and run code in multiple languages
+- browse and solve curated programming problems
+- submit solutions for automated evaluation
+- review code using the Google Gemini API
+- save draft code per problem and language
+- manage problem data through an admin flow
 
-* Even receive **AI-powered code reviews** for your submissions!
+The application follows a clean client-server architecture. The frontend is a React + Vite app with a Monaco-based editor and route-based user experience. The backend is an Express API that handles authentication, problem management, execution requests, and judge submission orchestration. MongoDB stores users, problems, submissions, and drafts, while Redis + BullMQ provides the asynchronous queue used to judge submission jobs.
 
-## ✨ Features
+## Why it matters
 
-* **🌐 Multi-Language Support:** Execute and submit code in C++, C, Java, and Python.
+This repository is interesting because it combines a typical competitive-programming workflow with product features that make it usable as a real application: authenticated user sessions, admin-only problem management, draft persistence, async queue execution, and environment-level code execution for C, C++, Java, and Python.
 
-* **⚙️ Code Execution (Run):** Instantly run your code with custom input and view real-time output.
+## Key features
 
-* **✅ Code Submission (Judge):** Submit code against automated test cases and receive precise verdicts like 'Accepted' or 'Wrong Answer'.
+### Core product features
 
-* **📊 Detailed Results:** Get a comprehensive breakdown of submission results, including input, expected output, actual output, and error details for each test case.
+- Online code execution with custom input for C, C++, Java, and Python
+- Problem listing and detail pages with problem statements and constraints
+- Automated judge evaluation against hidden or stored test cases
+- Submission tracking with status and verdict history
+- Draft saving per user, problem, and language
+- AI code review via Google Gemini
 
-* **🔒 User Authentication:** Track your solutions with a secure registration and login system (JWT-based).
+### User experience
 
-* **➕ Problem Management:** Ability for admins to add problems and their corresponding test cases.
+- React single-page application with light/dark theme support
+- Monaco-based code editor for in-browser coding
+- Dashboard for viewing user submissions
+- Login/register flow with cookie-based JWT sessions
+- Admin-only problem creation and editing routes
 
-* **🤖 AI Code Review (Gemini API):** Receive intelligent feedback and improvement suggestions for your code using the Gemini API.
+### Backend and engineering features
 
-* **🚀 Dockerized Environment:** Ensures a reliable and consistent code execution environment through containerization.
+- Express API with route-based separation for auth, problems, runs, submissions, AI review, and drafts
+- Middleware for authentication and admin authorization
+- Mongo validation for problem and user data
+- Redis-backed job queue for asynchronous submission processing
+- Dockerized backend runtime environment with compilers installed in the container
 
-## 🛠️ Tech Stack
+### Security
 
-Our project is built upon a combination of powerful and modern technologies:
+- Password hashing with bcryptjs
+- JWT-based auth stored in an HTTP-only cookie
+- Admin authorization middleware on sensitive routes
+- CORS configuration allowing configured frontend origins
+- Mongo schema validation for required fields and enum constraints
 
-### **Frontend**
+## Tech stack
 
-* **React.js:** For building dynamic and responsive user interfaces.
+| Layer | Technology | Purpose |
+| --- | --- | --- |
+| Frontend | React 19, Vite, React Router | SPA UI and client-side routing |
+| Styling | Tailwind CSS, DaisyUI | Layout and component styling |
+| Editor | Monaco Editor | Browser-based code editing |
+| API client | Axios | HTTP requests to backend |
+| Backend | Node.js, Express 5 | REST API and application logic |
+| Database | MongoDB, Mongoose | User, problem, submission, and draft storage |
+| Queue | Redis, BullMQ, ioredis | Asynchronous submission judging |
+| Auth | JWT, cookie-parser, bcryptjs | Session tokens and password hashing |
+| AI | Google GenAI SDK | Gemini-powered code review |
+| Runtime | Docker | Backend compilers and execution environment |
+| Local dev | Vite dev server, nodemon | Frontend and backend development workflow |
 
-* **Axios:** An HTTP client for interacting with the backend API.
+## System architecture
 
-* **Monaco Editor:** The browser-based code editor (powering VS Code).
+```mermaid
+flowchart LR
+    User[User] --> Frontend[React Frontend\nVite + Tailwind]
+    Frontend --> API[Express API\n/routes]
+    API --> Auth[Auth Middleware\nJWT + Cookie]
+    API --> ProblemController[Problem Controller]
+    API --> SubmissionController[Submission Controller]
+    API --> RunController[Run Controller]
+    API --> AIController[AI Review Controller]
+    Auth --> Mongo[(MongoDB\nUsers / Problems / Drafts / Submissions)]
+    SubmissionController --> Queue[Redis Queue\nBullMQ]
+    Queue --> Worker[Submission Worker]
+    Worker --> Judge[Judge Submission Service]
+    Judge --> Exec[Code Execution Services\nC / C++ / Java / Python]
+    AIController --> Gemini[Google Gemini API]
+```
 
-* **Tailwind CSS:** A utility-first CSS framework for rapid UI development.
+## Request lifecycle
 
-* **React Router DOM:** For navigation within the single-page application.
+A typical user flow is:
 
-### **Backend**
+1. The user visits the frontend, logs in, and receives a JWT in an HTTP-only cookie.
+2. The browser sends requests with credentials enabled.
+3. Express routes receive the request and apply auth/admin middleware where required.
+4. Controllers validate inputs and invoke service logic.
+5. Mongoose models persist or fetch data from MongoDB.
+6. Submission requests enqueue a BullMQ job for asynchronous evaluation.
+7. The worker executes the code, stores verdict results, and returns status to the client.
 
-* **Node.js (Express.js):** For fast and scalable server-side logic.
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as Express API
+    participant M as Auth Middleware
+    participant C as Controller
+    participant S as Service / Worker
+    participant DB as MongoDB
+    participant R as Redis
 
-* **MongoDB (Mongoose):** An Object Data Modeling (ODM) for interacting with the No-SQL database.
+    U->>F: Submit code or solve a problem
+    F->>A: POST /api/submission or /api/run
+    A->>M: Validate JWT cookie
+    M-->>A: Authorized user
+    A->>C: Route handler
+    C->>S: Run judge / persist submission
+    S->>R: Enqueue job
+    R->>S: Worker picks job
+    S->>DB: Save submission + verdict
+    S-->>F: Status + result payload
+    F-->>U: Live verdict / output
+```
 
-* **bcryptjs:** For password hashing and security.
+## Authentication architecture
 
-* **jsonwebtoken (JWT):** For user authentication and authorization.
+Authentication is implemented using JWTs stored in an HTTP-only cookie named `token`.
 
-* **cookie-parser & cors:** To handle HTTP cookies and Cross-Origin Resource Sharing.
+### Auth flow
 
-* **`child_process` (Node.js):** For executing external compilers/interpeterters within the Docker container.
+- Registration: `POST /api/auth/register`
+- Login: `POST /api/auth/login`
+- Current user lookup: `GET /api/auth/me`
+- Logout: `POST /api/auth/logout`
 
-* **`uuid`:** For generating unique file names.
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as Express API
+    participant DB as MongoDB
 
-### **Database**
+    U->>F: Enter email/password
+    F->>A: POST /api/auth/login
+    A->>DB: Look up user by email
+    DB-->>A: User record
+    A->>A: bcrypt.compare(password, storedHash)
+    A->>A: jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: '1d' })
+    A-->>F: Set httpOnly cookie `token`
+    F->>A: GET /api/auth/me with credentials
+    A->>A: jwt.verify(token, SECRET_KEY)
+    A->>DB: Fetch user without password
+    DB-->>A: User payload
+    A-->>F: Current user data
+```
 
-* **MongoDB Atlas:** Our cloud-hosted MongoDB database.
+### Auth details from the codebase
 
-### **Code Execution Environment**
+- `server/controllers/auth.controller.js` hashes passwords with `bcrypt.hash(password, 10)`.
+- Login verifies the hash with `bcrypt.compare()`.
+- Tokens are created with `jsonwebtoken` and set on the response as `res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "None" })`.
+- Protected routes use `server/middleware/auth.middleware.js` to validate the cookie and attach `req.user`.
+- `server/middleware/admin.middleware.js` restricts admin-only routes by checking `req.user.role === "admin"`.
 
-* **Docker:** To containerize all compilers (g++, gcc, openjdk, python3) in an isolated and consistent environment.
+## Backend architecture
 
-### **Deployment**
+The backend is organized into a classic Express layered structure:
 
-* **AWS EC2:** For hosting the backend server.
+- `server/app.js`: creates the Express app, loads middleware, and mounts route modules.
+- `server/routes/`: defines endpoints for auth, problems, runs, submissions, AI review, and drafts.
+- `server/controllers/`: handles request validation and orchestration.
+- `server/services/`: implements execution logic, AI review integration, file generation, and judge behavior.
+- `server/middleware/`: performs auth and admin enforcement.
+- `server/models/`: defines Mongoose schemas and data contracts.
+- `server/config/`: connects to MongoDB, Redis, and centralizes environment configuration.
+- `server/workers/`: contains the BullMQ submission worker.
+- `server/queues/`: creates the Redis queue used to process submissions asynchronously.
 
-* **Vercel:** For deploying the frontend application.
+## Database architecture
 
-* **Nginx:** (If applicable) For reverse proxying and SSL termination.
+The system uses MongoDB as the primary datastore, with schema-driven validation for core entities.
 
-## 🏗️ Architecture Overview
+```mermaid
+erDiagram
+    USER ||--o{ SUBMISSION : submits
+    USER ||--o{ DRAFT : saves
+    PROBLEM ||--o{ SUBMISSION : judges
+    PROBLEM ||--o{ TESTCASE : has
 
-The Judge Matrix follows a robust client-server architecture, leveraging containerization for consistent code execution and cloud services for scalability.
+    USER {
+      ObjectId _id
+      string fullname
+      string email
+      string password
+      enum role
+      Date createdAt
+      Date updatedAt
+    }
 
-![images/architecture_diagram.png](https://github.com/Sumit505472/dev-project/blob/fb59ea6b9522dea68b25e9b232da2cf97c866209/architecture.png)
+    PROBLEM {
+      ObjectId _id
+      string title
+      string slug
+      enum difficulty
+      string description
+      string input_format
+      string output_format
+      string constraints
+      string[] tags
+      object[] examples
+      object[] hidden_test_cases
+      number time_limit
+      number memory_limit
+      Date createdAt
+      Date updatedAt
+    }
 
-* **User's Browser / Client:** The interactive interface where users write, run, and submit their code.
-* **Vercel:** Hosts the frontend application for fast global delivery.
-* **AWS:** Provides the cloud infrastructure (e.g., EC2 instances) for the backend.
-* **Handles Traffic, SSL:** Nginx or a similar proxy layer manages incoming requests, handles SSL/TLS termination, and routes traffic.
-* **Docker:** Containerizes the execution environment, ensuring consistent and isolated compilation/running of user code.
-* **Node.js Express Backend:** The core application logic, handling authentication, problem management, and orchestrating code execution and AI interactions.
-* **MongoDB:** The NoSQL database used to store user data, problem statements, test cases, and submission records.
-* **Gemini:** Utilized for AI-powered code reviews, providing intelligent feedback on user submissions.
+    SUBMISSION {
+      ObjectId _id
+      ObjectId user
+      ObjectId problem
+      string code
+      enum language
+      enum status
+      string verdict
+      object[] results
+      Date submittedAt
+    }
 
-## 🏁 Getting Started
+    DRAFT {
+      ObjectId _id
+      ObjectId userId
+      ObjectId problemId
+      enum language
+      string code
+      Date updatedAt
+    }
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+    TESTCASE {
+      ObjectId _id
+      ObjectId problemId
+      string input
+      string output
+    }
+```
 
-### **Prerequisites**
+### Important entities
 
-Ensure you have the following installed on your system:
+#### User
 
-* [Node.js](https://nodejs.org/en/download/) (v18 or newer)
+Stored in `server/models/user.js`.
 
-* [npm](https://www.npmjs.com/get-npm) (comes with Node.js)
+- fields: `fullname`, `email`, `password`, `role`, `submissions`
+- role is restricted to `user` or `admin`
+- email is unique and lower-cased
 
-* [MongoDB Atlas Account](https://www.mongodb.com/cloud/atlas/register) (for the database)
+#### Problem
 
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+Stored in `server/models/problem.js`.
 
-* [Git](https://git-scm.com/downloads)
+- required fields include title, difficulty, description, input/output format, and constraints
+- `slug` is unique and generated from the title when creating problems
+- `examples` and `hidden_test_cases` are required arrays
+- difficulty allowed values: `Easy`, `Medium`, `Hard`
 
-* [Google Cloud Project & Gemini API Key](https://cloud.google.com/gemini/docs/tutorials/text-tutorial) (for AI review)
+#### Submission
 
-### **1. Clone the Repository**
+Stored in `server/models/submission.js`.
+
+- references `User` and `Problem`
+- tracks `code`, `language`, `status`, `verdict`, and `results`
+- supported languages: `cpp`, `c`, `java`, `python`
+- status values: `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED`
+
+#### Draft
+
+Stored in `server/models/draft.js`.
+
+- unique composite index on `{ userId, problemId, language }`
+- stores unsent or partially written code state for a given problem and language
+
+## API documentation
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/api/auth/register` | No | Register a new user |
+| POST | `/api/auth/login` | No | Log in and set JWT cookie |
+| GET | `/api/auth/me` | Yes | Get current authenticated user |
+| POST | `/api/auth/logout` | Yes | Clear auth cookie |
+| GET | `/api/problems` | No | List problems |
+| POST | `/api/problems/add` | Yes, admin | Create a problem |
+| POST | `/api/problems/testcases` | Yes, admin | Insert test cases |
+| GET | `/api/problems/:id` | No | Fetch a single problem |
+| PUT | `/api/problems/:id` | Yes, admin | Update a problem |
+| DELETE | `/api/problems/:id` | Yes, admin | Delete a problem |
+| POST | `/api/run` | No | Run code and return output |
+| POST | `/api/submission` | Yes | Queue a submission for evaluation |
+| GET | `/api/submission/user/:id` | Yes | Get submissions for a user |
+| GET | `/api/submission/:submissionId` | Yes | Get submission status and results |
+| POST | `/api/ai/review` | No | Review code through Gemini |
+| POST | `/api/drafts/save` | Yes | Save draft code per problem/language |
+| GET | `/api/drafts/:problemId/:language` | Yes | Fetch draft code |
+
+### Example requests
+
+#### Register
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"fullname":"Jane Doe","email":"jane@example.com","password":"secret123"}'
+```
+
+#### Submit code
+
+```bash
+curl -X POST http://localhost:5000/api/submission \
+  -H "Content-Type: application/json" \
+  -b "token=<your-cookie>" \
+  -d '{"code":"#include <iostream>\nint main(){std::cout<<\"hi\"; return 0;}\n","language":"cpp","problemId":"<problem-id>"}'
+```
+
+#### Run code
+
+```bash
+curl -X POST http://localhost:5000/api/run \
+  -H "Content-Type: application/json" \
+  -d '{"language":"python","code":"print(\"hello\")","input":""}'
+```
+
+## Project structure
+
+```text
+CodeEdge/
+├── architecture.png
+├── docker-compose.yml
+├── frontend/
+│   ├── .env
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── public/
+│   ├── src/
+│   ├── tailwind.config.js
+│   ├── vercel.json
+│   └── vite.config.js
+├── README.md
+├── server/
+│   ├── .env
+│   ├── app.js
+│   ├── config/
+│   ├── controllers/
+│   ├── Dockerfile
+│   ├── execute/
+│   ├── generateInputFile.js
+│   ├── inputs/
+│   ├── middleware/
+│   ├── models/
+│   ├── package.json
+│   ├── queues/
+│   ├── routes/
+│   ├── server.js
+│   ├── services/
+│   ├── tmp/
+│   └── workers/
+└── .gitignore
+```
+
+### Notable directory responsibilities
+
+- `frontend/src/pages/`: route-level page components such as dashboard, compiler, problem details, and admin panel
+- `frontend/src/components/`: reusable UI blocks like header, AI review panel, editor, and submission table
+- `server/controllers/`: request-handler logic
+- `server/services/codeExecution/`: runtime wrappers for C, C++, Java, and Python
+- `server/services/submission/`: judge logic that evaluates hidden test cases
+- `server/workers/submissionWorker.js`: Redis-backed background judge runner
+- `server/models/`: Mongo schema definitions
+
+## UI and architecture visuals
+
+No application screenshots were committed as product images in the repository. The project does include an architecture diagram at [architecture.png](architecture.png), which is a high-level system overview rather than a UI screenshot.
+
+## Docker architecture
+
+The repository includes a Docker Compose setup for the API, worker, and Redis services.
+
+```mermaid
+flowchart TB
+    User[Client or Browser] --> API[codeedge-api
+    Express App]
+    API --> Redis[(Redis)]
+    Redis --> Worker[codeedge-worker
+    BullMQ Submission Worker]
+    Worker --> Mongo[(MongoDB)]
+    Worker --> CodeExec[Compiler Runtime
+    g++ / gcc / javac / python3]
+```
+
+### Docker Compose services
+
+- `api`: runs the Express API on port `5000`
+- `worker`: runs the submission worker process
+- `redis`: runs a local Redis instance with a healthcheck
+
+### Docker commands
+
+```bash
+docker compose up --build
+```
+
+To stop the stack:
+
+```bash
+docker compose down
+```
+
+## Deployment notes
+
+The repository contains frontend SPA rewrite config for Vercel (`frontend/vercel.json`) and a frontend CORS allowlist that includes Vercel domains. There is no repository-level deployment pipeline, CloudFormation, Terraform, or production deployment manifest proving a hosted deployment environment beyond that configuration.
+
+## Installation
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+ recommended
+- [npm](https://www.npmjs.com/)
+- [MongoDB](https://www.mongodb.com/) instance or connection string
+- [Redis](https://redis.io/) instance or Docker Compose service
+- [Google Gemini API key](https://ai.google.dev/gemini-api)
+- Docker Desktop or Docker Engine if you want to run the bundled compose stack
+
+### Clone the repository
+
+```bash
 git clone https://github.com/Sumit505472/dev-project.git
+cd codEdge
+```
 
-### **2. Backend Setup**
+### Environment variables
 
-1.  **Navigate to the Backend Directory:**
+The repository expects these environment variables.
 
-    ```
-    cd server
-    ```
+| Variable | Used in | Required | Purpose |
+| --- | --- | --- | --- |
+| `MONGO_URI` | `server/.env` | Yes | MongoDB connection string |
+| `SECRET_KEY` | `server/.env` | Yes | JWT signing key |
+| `GOOGLE_API_KEY` | `server/.env` | Yes | Google Gemini API key for code review |
+| `PORT` | `server/.env` | Yes | Express port, default `5000` |
+| `REDIS_URL` | `server/.env` and Docker Compose | Yes for queue worker | Redis connection string |
+| `VITE_BACKEND_URL` | `frontend/.env` | Yes for local frontend | Backend URL used by the React app |
 
-2.  **Set up Environment Variables (`.env`):**
-    Create a file named `.env` in the root of the `server` directory and populate it with the following details:
+Example backend environment file:
 
-    ```
-    PORT=5000
-    MONGO_URI=mongodb+srv://<your_atlas_username>:<your_atlas_password>@<your_cluster_name>.mongodb.net/<your_database_name>?retryWrites=true&w=majority
-    SECRET_KEY=YOUR_JWT_SECRET_KEY_HERE_FOR_AUTH
-    GOOGLE_API_KEY=YOUR_GEMINI_API_KEY_HERE_FOR_AI_REVIEW
-    ```
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/codedge
+SECRET_KEY=replace-with-a-secure-secret
+GOOGLE_API_KEY=your-gemini-api-key
+REDIS_URL=redis://127.0.0.1:6379
+```
 
-    **Make sure to replace `<your_atlas_username>`, `<your_atlas_password>`, `<your_cluster_name>`, `<your_database_name>`, `YOUR_JWT_SECRET_KEY_HERE_FOR_AUTH`, and `YOUR_GEMINI_API_KEY_HERE_FOR_AI_REVIEW` with your actual credentials and API keys.**
+Example frontend environment file:
 
-3.  **Install npm dependencies:**
+```env
+VITE_BACKEND_URL=http://localhost:5000
+```
 
-    ```
-    npm install
-    ```
+## Run locally
 
-4.  **Build the Docker Image:**
-    Ensure you are in the `server` directory containing the `Dockerfile`.
+### 1. Install backend dependencies
 
-    ```
-    sudo docker build -t cpp-compiler .
-    ```
+```bash
+cd server
+npm install
+```
 
-5.  **Run the Docker Container:**
+### 2. Start the backend
 
-    ```
-    sudo docker run -d -p 5000:5000 --name online-judge-backend-con --restart always --env-file ./.env cpp-compiler
-    ```
+```bash
+npm run dev
+```
 
-    This will run the backend server on port `5000`. You can check the logs using `sudo docker logs online-judge-backend-con`.
+This starts the Express app with nodemon.
 
-### **3. Frontend Setup**
+### 3. Install frontend dependencies
 
-1.  **Navigate to the Frontend Directory:**
+```bash
+cd ../frontend
+npm install
+```
 
-    ```
-    cd ../client
-    ```
+### 4. Start the frontend
 
-2.  **Set up Environment Variables (`.env.local`):**
-    Create a file named `.env.local` in the root of the `client` directory and add your backend URL to it:
+```bash
+npm run dev
+```
 
-    ```
-    VITE_BACKEND_URL=http://localhost:5000
-    ```
+The frontend typically runs on port `5173` and expects the backend at `http://localhost:5000` unless `VITE_BACKEND_URL` is changed.
 
-    **Note:** For deployment, change this to your deployed backend URL (e.g., `https://backend.codedge.online`).
+## Testing
 
-3.  **Install npm dependencies:**
+The repository currently includes linting scripts, but there does not appear to be a formal automated test suite configured with Jest, Vitest, or Mocha. The project does provide frontend linting via ESLint.
 
-    ```
-    npm install
-    ```
+### Available validation commands
 
-4.  **Run the Frontend Application:**
+```bash
+cd frontend
+npm run lint
+```
 
-    ```
-    npm run dev
-    ```
+No backend test runner or CI test command is defined in the current repository files.
 
-    Your frontend application will typically be available at `http://localhost:5173`.
+## Security
 
-### **4. Adding Problems and Test Cases**
+The repository implements several practical security measures:
 
-You can add problems and test cases to your MongoDB Atlas database either manually or via an admin panel if you've implemented one.
+- password hashing with `bcryptjs`
+- JWT verification for protected routes
+- cookie-based authentication using `httpOnly` cookies
+- admin guard on sensitive routes
+- CORS configuration for approved origins
+- schema validation in Mongoose models for required fields and enums
 
-**Example JSON for adding a problem:**
-{
-title": "Sum of Two Numbers",
-"question_description": "Write a program that takes two integers A and B as input and outputs their sum.",
-"input_format": "The input consists of two space-separated integers on a single line.",
-"output_format": "Output the sum of A and B.",
-"difficulty": "Easy",
-"tags": ["Math", "Basic"],
-"time_limit": "1 Second",
-"memory_limit": "256 MB",
-"test_cases": [
-{
-"input": "5 10",
-"output": "15"
-},
-{
-"input": "100 200",
-"output": "300"
-}
-]
-}
+This is a robust application-level security setup for a project of this size, but there is no evidence in the repo of rate limiting, helmet headers, CSRF protection, or advanced infrastructure security hardening.
 
+## Engineering decisions
 
-You can add problems and their test cases by sending `POST` requests to the `/add` and `/testcases` endpoints respectively.
+### Decision: asynchronous submission processing via Redis and BullMQ
 
-## 🗺️ API Endpoints
+- Reason: code execution can take time and should not block request handling.
+- Benefit: the API can accept submissions quickly and complete evaluation in the background.
 
-Here's a quick overview of your backend's main API endpoints:
+### Decision: cookie-based JWT auth instead of localStorage token storage
 
-### **Authentication**
+- Reason: the backend sets an `httpOnly` cookie and the frontend uses `withCredentials`.
+- Benefit: reduces client-side token exposure and keeps auth tied to browser sessions.
 
-* `POST /register`: User registration.
+### Decision: problem validation in controller logic before database write
 
-* `POST /login`: User login, issues a JWT token.
+- Reason: the system validates fields such as required examples, hidden test cases, time limits, and difficulty.
+- Benefit: ensures invariant checks before data is persisted into MongoDB.
 
-* `GET /me`: Get current logged-in user information (authentication required).
+### Decision: per-problem and per-language draft persistence
 
-### **Code Execution & Judging**
+- Reason: a user may work on multiple languages and problems concurrently.
+- Benefit: draft recovery is localized and structured by `userId + problemId + language`.
 
-* `POST /run`: Execute code with custom input.
+## Performance and scalability
 
-    * **Request Body:** `{ code: string, language: string, input?: string }`
+The project includes several practical patterns:
 
-    * **Response:** `{ output: string }` or `{ error: string }`
+- asynchronous queue processing for code evaluation
+- Redis-backed work distribution via BullMQ
+- Mongo indexes on key fields such as `slug` and draft composite keys
+- file-based execution isolated to generated source and output files
+- frontend-only rendering through Vite and React for a low-friction developer experience
 
-* `POST /submit`: Submit and judge code against test cases.
+There are no repository-provided benchmark results or measured throughput numbers, so no performance claims beyond these implementation patterns should be assumed.
 
-    * **Request Body:** `{ code: string, language: string, problemId: string }`
+## Limitations
 
-    * **Response:** `{ success: boolean, verdict: string, results: Array<{ input: string, expected: string, actual: string, passed: boolean, error?: string, stderr?: string, stdout?: string }> }`
+- There is no formal automated test suite in the repository.
+- The project appears to rely on local environment configuration rather than a full production deploy manifest.
+- The backend execution model is local to the server runtime and not isolated in a multi-container system beyond the compose stack.
+- The AI code review feature depends on the `GOOGLE_API_KEY` environment value being present.
+- The app sets `secure: true` and `sameSite: "None"` for cookies, which requires valid HTTPS deployment conditions to function as intended.
 
-### **Problem Management**
+## Future improvements
 
-* `POST /add`: Add a new problem (for admin use).
+- add a real automated test suite for API and business logic
+- add pagination and filtering for large problem sets
+- add rate limiting and validation hardening for public API requests
+- add CI/CD workflow for linting and deployment checks
+- add leaderboard, snapshots, and submission analytics
+- add more languages and execution sandboxing for safer judge execution
 
-* `POST /testcases`: Add test cases for a specific problem.
+## Contributing
 
-* `GET /problem`: Get all available problems.
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes in a focused manner.
+4. Run applicable validation commands.
+5. Open a pull request with a clear summary of the change.
 
-* `GET /problem/:id`: Get a specific problem by ID.
+## License
 
-### **AI Review**
+No license has currently been specified for this repository.
 
-* `POST /ai-review`: Get an AI-generated review for code.
+## Author
 
-    * **Request Body:** `{ code: string }`
+No explicit author or maintainer metadata is included in this repository.
 
-    * **Response:** `{ success: boolean, review: string }`
+---
 
-## ✉️ Contact
+CodeEdge is a practical problem-solving and coding-execution platform built from a real stack: React, Express, MongoDB, Redis, BullMQ, Docker, and Gemini AI. It is best understood as a lightweight online judge with an interactive developer experience rather than a full enterprise SaaS deployment.
 
 If you have any questions, suggestions, or issues, feel free to reach out to me:
 
