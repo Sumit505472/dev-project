@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const  aiCodeReview=async(code)=> {
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-3.5-flash-lite",
     contents: `
     Review the following code and provide a detailed explanation of the code.
     Code: ${code}
