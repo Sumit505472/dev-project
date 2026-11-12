@@ -1,54 +1,20 @@
+import { ArrowRight, Check, ChevronDown, Circle, Play, Terminal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-export const HeroSection = ({isLoggedIn}) => {
-    const navigate=useNavigate();
 
+const codeLines = ["#include <bits/stdc++.h>", "", "using namespace std;", "", "int main() {", "  vector<int> nums = {2, 7, 11, 15};", '  cout << "Ready to solve";', "  return 0;", "}"];
+
+export const EditorMockup = ({ compact = false }) => (
+  <div className={`product-window ${compact ? "product-window-compact" : ""}`}>
+    <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div className="flex items-center gap-2"><span className="flex gap-1.5" aria-hidden="true"><Circle className="h-2.5 w-2.5 fill-rose-400 text-rose-400" /><Circle className="h-2.5 w-2.5 fill-amber-300 text-amber-300" /><Circle className="h-2.5 w-2.5 fill-emerald-400 text-emerald-400" /></span><span className="ml-2 text-xs font-medium text-slate-400">CodeEdge / main.cpp</span></div><span className="rounded-md border border-slate-700 px-2 py-1 text-[10px] text-slate-400">C++ <ChevronDown className="ml-1 inline h-3 w-3" /></span></div>
+    <div className="grid grid-cols-[36px_1fr] px-4 py-5 font-mono text-[11px] leading-6 sm:text-xs"><div className="select-none text-right text-slate-600">{codeLines.map((_, index) => <div key={index}>{String(index + 1).padStart(2, "0")}</div>)}</div><div className="pl-4 text-slate-300">{codeLines.map((line, index) => <div key={index} className={index === 0 || index === 2 ? "text-blue-300" : index === 6 ? "text-emerald-300" : ""}>{line || "\u00a0"}</div>)}</div></div>
+    <div className="flex items-center justify-between border-t border-slate-800 bg-slate-950/60 px-4 py-3"><span className="flex items-center gap-2 text-[11px] text-emerald-300"><Check className="h-3.5 w-3.5" /> Accepted <span className="text-slate-600">|</span> 42 ms</span>{!compact && <button type="button" className="flex items-center gap-1.5 rounded-md bg-blue-500 px-3 py-1.5 text-[11px] font-semibold text-white"><Play className="h-3 w-3 fill-current" /> Run</button>}</div>
+  </div>
+);
+
+export const HeroSection = ({ isLoggedIn }) => {
+  const navigate = useNavigate();
+  const startPath = isLoggedIn ? "/problems" : "/login";
   return (
-    <section className="max-w-6xl mx-auto p-8">
-      <div className="bg-white border border-gray-200 rounded-3xl px-10 py-12 flex flex-col md:flex-row items-center justify-between gap-10 shadow-sm">
-        
-        {/* Left Content */}
-        <div className="max-w-md">
-          <span className="inline-block px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full mb-4">
-            # Code. Compile. Conquer.
-          </span>
-
-          <h1 className="text-5xl font-bold leading-tight text-gray-900">
-            Master coding
-            <br />
-            with
-            <span className="text-blue-500"> CodeEdge</span>
-          </h1>
-
-          <p className="mt-5 text-gray-500 text-lg">
-            Your all-in-one platform to write, compile, and challenge
-            yourself with real-world problems — all in one seamless
-            workspace.
-          </p>
-
-          <button onClick={()=>{
-            console.log(isLoggedIn)
-            if (!isLoggedIn) {
-
-      navigate("/login");
-    } 
-    else{
-        navigate("/problems")
-    }
-          }} className="mt-8 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition">
-            🚀 Start Coding
-          </button>
-        </div>
-
-        {/* Right Image */}
-        <div className="w-full max-w-lg">
-          <img
-            src="https://imgs.search.brave.com/Fv1R9U1IfpaeDukqnvMzV66_sVxhd_eJ4Orbdv42oFE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTIy/NDUwMDQ1Ny9waG90/by9wcm9ncmFtbWlu/Zy1jb2RlLWFic3Ry/YWN0LXRlY2hub2xv/Z3ktYmFja2dyb3Vu/ZC1vZi1zb2Z0d2Fy/ZS1kZXZlbG9wZXIt/YW5kLWNvbXB1dGVy/LXNjcmlwdC5qcGc_/cz02MTJ4NjEyJnc9/MCZrPTIwJmM9bkhN/eXBrTVRVMUhVVVc4/NVp0MEZmN01EYnEx/N24wZVZlWGFvTTlL/bnQ0UT0"
-            alt="Code Editor"
-            className="w-full rounded-2xl shadow-lg"
-          />
-        </div>
-
-      </div>
-    </section>
+    <section className="hero-shell overflow-hidden border-b border-slate-200/80 dark:border-slate-800"><div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-20 pt-16 lg:grid-cols-[0.86fr_1.14fr] lg:px-8 lg:pb-28 lg:pt-24"><div className="relative z-10 max-w-xl"><div className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400"><span className="h-px w-7 bg-blue-500" /> Code. Compile. Conquer.</div><h1 className="text-5xl font-bold leading-[1.04] tracking-[-0.04em] text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">Master coding<br />with <span className="text-blue-500">CodeEdge.</span></h1><p className="mt-7 max-w-lg text-lg leading-8 text-slate-600 dark:text-slate-400">Write, compile, and solve real-world programming problems in one powerful workspace.</p><div className="mt-9 flex flex-wrap items-center gap-3"><button type="button" onClick={() => navigate(startPath)} className="button-primary">Start Coding <ArrowRight className="h-4 w-4" /></button><button type="button" onClick={() => navigate("/compiler")} className="button-secondary">Explore Compiler</button></div><div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-500 dark:text-slate-400"><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-500" /> Multiple languages</span><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-500" /> Instant execution</span><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-500" /> Curated problems</span></div></div><div className="relative lg:pl-4"><div className="absolute -inset-8 rounded-full bg-blue-100/70 blur-3xl dark:bg-blue-950/40" /><div className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.45)] dark:border-slate-700 dark:bg-slate-900"><EditorMockup /></div><div className="absolute -bottom-5 -left-5 hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:flex"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950"><Terminal className="h-4 w-4" /></span><span><strong className="block text-xs text-slate-900 dark:text-white">Output ready</strong><span className="text-[11px] text-slate-500">Your workspace is live</span></span></div></div></div></section>
   );
 };

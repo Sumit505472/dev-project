@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+	body { @apply bg-[#f8fafc] text-slate-900 antialiased dark:bg-slate-950 dark:text-white; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+}
+
+@layer components {
+	.button-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950; }
+	.button-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-400 dark:focus:ring-offset-slate-950; }
+	.button-danger { @apply rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-400; }
+	.eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400; }
+	.section-title { @apply text-3xl font-bold tracking-[-0.03em] text-slate-950 dark:text-white sm:text-4xl; }
+	.section-copy { @apply max-w-xl text-base leading-7 text-slate-600 dark:text-slate-400; }
+	.feature-card { @apply rounded-2xl border border-slate-200 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_16px_40px_-24px_rgba(37,99,235,0.45)] dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900; }
+	.feature-card h3 { @apply mt-5 text-xl font-semibold text-slate-950 dark:text-white; }
+	.feature-card p { @apply mt-2 max-w-sm text-sm leading-6 text-slate-600 dark:text-slate-400; }
+	.icon-box { @apply flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400; }
+	.card-link { @apply mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300; }
+	.product-window { @apply overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-white; }
+	.product-window-compact { @apply text-[10px]; }
+	.mini-window { @apply mt-8 rounded-xl border border-slate-700 bg-slate-900 p-4 text-white; }
+}

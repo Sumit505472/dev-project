@@ -1,78 +1,28 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Code2, BookOpenCheck, Sparkles } from "lucide-react";
-import { HeroSection } from "../components/HeroSection";
+import { ArrowRight, BookOpenCheck, Check, Code2, FileCode2, Gauge, ShieldCheck } from "lucide-react";
+import { EditorMockup, HeroSection } from "../components/HeroSection";
+
+const problemPreview = [["Two Sum", "Easy"], ["Valid Parentheses", "Easy"], ["Binary Tree Traversal", "Medium"], ["Longest Increasing Subsequence", "Medium"]];
+
 const HomePage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  if (loading)
-    return <p className="p-4 text-gray-800 dark:text-gray-200">Loading...</p>;
-
+  if (loading) return <p className="p-6 text-slate-600 dark:text-slate-300">Loading...</p>;
   const isLoggedIn = user && Object.keys(user).length > 0;
-
-  const handleGoToProblemsClick = () => {
-    if (!isLoggedIn) {
-      navigate("/login");
-    }
-  };
+  const handleGoToProblemsClick = () => navigate(isLoggedIn ? "/problems" : "/login");
 
   return (
-    <div className="min-h-screen ">
-
-      <HeroSection isLoggedIn={isLoggedIn} />
-      
-
-      {/* Cards */}
-      <main className="max-w-6xl mx-auto px-6 py-10 grid gap-10 md:grid-cols-2">
-
-        {/* Compiler Card */}
-        <div className="rounded-3xl shadow-xl border border-transparent p-8 transition-transform hover:-translate-y-1 hover:shadow-2xl
-                        bg-gradient-to-tr from-[#90CDF4] via-[#63B3ED] to-[#4299E1] text-white dark:from-[#2A4365] dark:via-[#2C5282] dark:to-[#2B6CB0]">
-          <div className="flex items-center gap-3 mb-4">
-            <Code2 className="w-6 h-6 text-white" />
-            <h2 className="text-3xl font-bold">Online Code Compiler</h2>
-          </div>
-          <p className="text-white/90 mb-6">
-            Write, test, and run your code instantly 
-          </p>
-          <Link to="/compiler">
-            <button className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#2B6CB0] hover:bg-gray-200 transition">
-              Launch Compiler
-            </button>
-          </Link>
-        </div>
-
-        {/* Problems Card */}
-        <div className="rounded-3xl shadow-xl border border-transparent p-8 transition-transform hover:-translate-y-1 hover:shadow-2xl
-                        bg-gradient-to-tr from-[#68D391] via-[#48BB78] to-[#38A169] text-white dark:from-[#22543D] dark:via-[#276749] dark:to-[#2F855A]">
-          <div className="flex items-center gap-3 mb-4">
-            <BookOpenCheck className="w-6 h-6 text-white" />
-            <h2 className="text-3xl font-bold">Solve Coding Challenges</h2>
-          </div>
-          <p className="text-white/90 mb-6">
-            Solve curated problems, sharpen your skills, and track your progress.
-          </p>
-          {isLoggedIn ? (
-            <Link to="/problems">
-              <button className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#2F855A] hover:bg-gray-200 transition">
-                Explore Problems
-              </button>
-            </Link>
-          ) : (
-            <button
-              onClick={handleGoToProblemsClick}
-              className="w-full py-3 rounded-xl text-base font-semibold bg-white text-[#4A5568] hover:bg-gray-200 transition"
-              title="You must be logged in to access problems"
-            >
-              Login to Solve Problems
-            </button>
-          )}
-        </div>
-
-      </main>
-    </div>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-white"><HeroSection isLoggedIn={isLoggedIn} /><main>
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-8"><div className="mb-10 max-w-xl"><p className="eyebrow">Everything in one place</p><h2 className="section-title mt-3">A sharper way to build your skills.</h2><p className="section-copy mt-4">A focused environment for experimenting with code and building the problem-solving habit that lasts.</p></div><div className="grid gap-5 md:grid-cols-2">
+        <article className="feature-card group"><div className="icon-box"><Code2 className="h-5 w-5" /></div><h3>Online Code Compiler</h3><p>Write, test, and run code instantly without leaving your workspace.</p><Link to="/compiler" className="card-link">Launch Compiler <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link><div className="mini-window"><div className="flex items-center justify-between text-[10px] text-slate-400"><span>C++</span><span className="flex items-center gap-1 text-blue-300"><Gauge className="h-3 w-3" /> Run</span></div><div className="mt-3 font-mono text-[10px] leading-5 text-slate-300">int main() &#123;<br /><span className="pl-3">cout &lt;&lt; "Hello";</span><br />&#125;</div><div className="mt-3 border-t border-slate-700 pt-2 text-[10px] text-emerald-300"><Check className="mr-1 inline h-3 w-3" /> Successfully compiled</div></div></article>
+        <article className="feature-card group"><div className="icon-box"><BookOpenCheck className="h-5 w-5" /></div><h3>Solve Coding Challenges</h3><p>Practice curated problems, sharpen your logic, and track your progress.</p><button type="button" onClick={handleGoToProblemsClick} className="card-link">{isLoggedIn ? "Explore Problems" : "Login to Solve"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></button><div className="mini-window space-y-2"><div className="flex items-center justify-between rounded-md border border-slate-700 px-3 py-2 text-[10px] text-slate-300"><span>Two Sum</span><span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-blue-300">Easy</span></div><div className="flex items-center justify-between rounded-md border border-slate-700 px-3 py-2 text-[10px] text-slate-300"><span>Binary Tree Traversal</span><span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-blue-300">Medium</span></div><div className="pt-1 text-[10px] text-slate-500">Your practice queue, neatly organized.</div></div></article>
+      </div></section>
+      <section className="border-y border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 lg:grid-cols-[0.8fr_1.2fr] lg:px-8"><div><p className="eyebrow">01 / Compiler</p><h2 className="section-title mt-3">Code without limits.</h2><p className="section-copy mt-4">Go from first line to working output in a clean, distraction-free compiler built for fast iteration.</p><Link to="/compiler" className="button-primary mt-8 inline-flex">Open Compiler <ArrowRight className="h-4 w-4" /></Link><div className="mt-8 grid gap-3 text-sm text-slate-500 dark:text-slate-400"><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Fast feedback loops</span><span className="flex items-center gap-2"><FileCode2 className="h-4 w-4 text-blue-500" /> Familiar editor experience</span></div></div><div className="rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950"><EditorMockup /></div></div></section>
+      <section><div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:px-8"><div className="order-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:order-1"><div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700"><div><p className="text-xs text-slate-500">Practice library</p><h3 className="mt-1 font-semibold text-slate-900 dark:text-white">Keep moving forward</h3></div><span className="text-xs text-blue-500">4 problems</span></div><div className="divide-y divide-slate-100 dark:divide-slate-800">{problemPreview.map(([title, difficulty]) => <div key={title} className="flex items-center justify-between py-4 text-sm"><span className="text-slate-700 dark:text-slate-300">{title}</span><span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">{difficulty}</span></div>)}</div></div><div className="order-1 lg:order-2"><p className="eyebrow">02 / Problems</p><h2 className="section-title mt-3">Practice with purpose.</h2><p className="section-copy mt-4">Build confidence one problem at a time with a focused collection of challenges designed to keep you progressing.</p><button type="button" onClick={handleGoToProblemsClick} className="button-secondary mt-8">Explore Problems <ArrowRight className="h-4 w-4" /></button></div></div></section>
+      <section className="mx-6 mb-20 overflow-hidden rounded-2xl bg-slate-950 px-6 py-14 text-center sm:px-10"><div className="relative mx-auto max-w-2xl"><p className="eyebrow text-blue-400">Your next solution starts here</p><h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Make every line count.</h2><p className="mx-auto mt-4 max-w-lg text-slate-400">Open a workspace and turn the next idea into something that runs.</p><Link to="/compiler" className="button-primary mt-8 inline-flex">Start Building <ArrowRight className="h-4 w-4" /></Link></div></section>
+    </main><footer className="border-t border-slate-200 px-6 py-8 dark:border-slate-800"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between"><span className="font-semibold text-slate-800 dark:text-slate-200">CodeEdge</span><span>Code, compile, and keep learning.</span></div></footer></div>
   );
 };
 
